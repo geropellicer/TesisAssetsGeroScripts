@@ -15,7 +15,7 @@ public class persona : MonoBehaviour
     float intervalo;
 
     /// <summary>Referencia al audio</summary>
-    AudioSource audio;
+    AudioSource audioS;
 
     /// <summary>Para seleccionar que kinect la spwneó y cual la está siguiendo</summary>
     public enum kin
@@ -71,7 +71,7 @@ public class persona : MonoBehaviour
         osc = GameObject.FindGameObjectWithTag("OSC").GetComponent<OSC>();
         ActualizarCalibrado();
 
-        audio = GetComponent<AudioSource>();
+        audioS = GetComponent<AudioSource>();
     }
 
     // Update is called once per frame
@@ -91,11 +91,11 @@ public class persona : MonoBehaviour
             }
             if (impar)
             {
-                audio.Play();
+                audioS.Play();
             }
             else
             {
-                audio.Pause();
+                audioS.Pause();
             }
             impar = !impar;
 

@@ -125,9 +125,9 @@ public class Follower : MonoBehaviour {
             if(persona != null) {
                 // Si el otro sujeto no tiene persona, es huerfano, manejamos aca
                 if(other.gameObject.GetComponent<Follower>().persona == null){
-                    ManejarColisionesConSujetoHuerfano();
-                } else if(persona.GetComponent<Seguido>().GetNumSeguidores > other.gameObject.GetComponent<Follower>().persona.GetNumSeguidores){
-                    ManejarColisionesConSujeto();
+                    ManejarColisionesConSujetoHuerfano(other);
+                } else if(persona.GetComponent<Seguido>().GetNumSeguidores() > other.gameObject.GetComponent<Follower>().persona.GetComponent<Seguido>().GetNumSeguidores()){
+                    ManejarColisionesConSujeto(other);
                 }
             }
         }
@@ -166,7 +166,7 @@ public class Follower : MonoBehaviour {
     public void ConfirmarNuevoSeguido(GameObject nuevoSeguido){
         persona = nuevoSeguido.transform;
         CambiarEstado(Estado.SIGUIENDO);
-        colorSprite = nuevoSeguido.GetComponent<Seguido>.colorSprite;
+        colorSprite = nuevoSeguido.GetComponent<Seguido>().GetColorSprite();
         sR.color = colorSprite;
     }
 }

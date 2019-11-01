@@ -51,7 +51,7 @@ public class Seguido : MonoBehaviour {
     {
         seguidores = new List<GameObject>();
         sR = GetComponent<SpriteRenderer>();
-        colorSprite = new Color(Mathf.Random(0,1), Mathf.Random(0,1), Mathf.Random(0,1), 1);
+        colorSprite = new Color(Random.Range(0,1), Random.Range(0,1), Random.Range(0,1), 1);
         sR.color = colorSprite;
         //For good measure, set the previous locations
         for(int i = 0; i < previousLocations.Length; i++)
@@ -70,22 +70,20 @@ public class Seguido : MonoBehaviour {
     public void SolicitarEmpezarASeguir(GameObject posibleNuevoSeguidor, bool tienePersona) {
         if(tienePersona){
             int peso1 = numSeguidores;
-            int peso2 = posibleNuevoSeguidor.GetComponent<Follower>().persona.GetComponent<Seguido>.GetNumSeguidores;
-            bool[] posibilidades = new bool[true, false];
-            int[] pesosPosibilidades = new int[peso1, peso2]; 
-            if(GetRandomWeightedIndex(pesosPosibilidades)){
+            int peso2 = posibleNuevoSeguidor.GetComponent<Follower>().persona.GetComponent<Seguido>().GetNumSeguidores();
+            if(RandomWeightedBool(peso1, peso2)){
                 AceptarEmpezarASeguir(posibleNuevoSeguidor);
             }
         } else {
             // Si es huerfano aceptamos de una
-            AceptarEmpezarASeguir();
+            AceptarEmpezarASeguir(posibleNuevoSeguidor);
         }
     }
 
     /// <summary> En caso de que la solicitud resulte exitosa pasamos por aca para agregarlo a la persona y para pegarle al bicho y agregar
     /// una referencia a la persona. </summary>
     public void AceptarEmpezarASeguir(GameObject nuevoSeguidor) {
-        seguidorPerdido.GetComponent<Follower>().VaciarSeguido(gameObject);
+        nuevoSeguidor.GetComponent<Follower>().VaciarSeguido(gameObject);
         seguidores.Add(nuevoSeguidor);
         numSeguidores = seguidores.Count;
         nuevoSeguidor.GetComponent<Follower>().ConfirmarNuevoSeguido(gameObject);
@@ -128,29 +126,33 @@ public class Seguido : MonoBehaviour {
 
 
     /// <summary> Devuelve el indice al azar de uno de los pesos insertados en el array</summary>
-    public int GetRandomWeightedIndex(int[] weights)
+    /// <summary> For chance calculations. </summary>
+    public static bool RandomWeightedBool (float chanceTrue, float chanceFalse)
     {
-        if(weights == null || weights.Length == 0) return -1;
-    
-        int t;
-        int i;
-        for(i = 0; i < weights.Length; i++)
+
+        // Hay que ingresar con una variable chance de entr  0,01 a 1 que exprese las posibilidades de que salga True
+        float chance = (chanceTrue - chanceFalse) / chanceTrue;
+
+        // convert chance
+        int target = (int)(chance * 100);
+        // random value
+        int random = Random.Range(1, 101);
+        // compare to probability range
+        if (random >= 1 && random <= target)
         {
-            if(weights[i] >= 0) w += weights[i];
+            return true;
         }
-    
-        float r = Random.value;
-        float s = 0f;
-    
-        for(i = 0; i < weights.Length; i++)
+        else
         {
-            if (weights[i] <= 0f) continue;
-        
-            s += (float)weights[i] / total;
-            if (s >= r) return i;
+            return false;
         }
-    
-        return -1;
     }
+
+    // Hay que agregar using system
+    // public float Map(float x, float in_min, float in_max, float out_min, float out_max, bool clamp = false)
+    // {
+    //     if (clamp) x = Math.Max(in_min, Math.Min(x, in_max));
+    //     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    // }
  
 }
