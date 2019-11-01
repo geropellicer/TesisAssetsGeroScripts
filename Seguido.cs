@@ -85,6 +85,7 @@ public class Seguido : MonoBehaviour {
     /// <summary> En caso de que la solicitud resulte exitosa pasamos por aca para agregarlo a la persona y para pegarle al bicho y agregar
     /// una referencia a la persona. </summary>
     public void AceptarEmpezarASeguir(GameObject nuevoSeguidor) {
+        seguidorPerdido.GetComponent<Follower>().VaciarSeguido(gameObject);
         seguidores.Add(nuevoSeguidor);
         numSeguidores = seguidores.Count;
         nuevoSeguidor.GetComponent<Follower>().ConfirmarNuevoSeguido(gameObject);
