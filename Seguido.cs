@@ -51,7 +51,7 @@ public class Seguido : MonoBehaviour {
     {
         seguidores = new List<GameObject>();
         sR = GetComponent<SpriteRenderer>();
-        colorSprite = new Color(Random.Range(0,1), Random.Range(0,1), Random.Range(0,1), 1);
+        colorSprite = new Color(Random.Range(0f,1f), Random.Range(0f,1f), Random.Range(0f,1f), 1f);
         sR.color = colorSprite;
         //For good measure, set the previous locations
         for(int i = 0; i < previousLocations.Length; i++)
@@ -140,10 +140,12 @@ public class Seguido : MonoBehaviour {
         // compare to probability range
         if (random >= 1 && random <= target)
         {
+            Debug.Log("Convocado y aceptado");
             return true;
         }
         else
         {
+            Debug.Log("Convocado y rechazado");
             return false;
         }
     }
