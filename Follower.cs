@@ -5,7 +5,7 @@ using Pathfinding;
 /// <summary>
 /// Sets the destination of an AI to the position of a specified object.
 /// This component should be attached to a GameObject together with a movement script such as AIPath, RichAI or AILerp.
-/// This component will then make the AI move towards the <see cref="target"/> set on this component.
+/// This component will then make the AI move towards the <see cref="persona"/> set on this component.
 ///
 /// See: <see cref="Pathfinding.IAstarAI.destination"/>
 ///
@@ -20,13 +20,14 @@ public enum Estado {
 [UniqueComponent(tag = "ai.destination")]
 public class Follower : MonoBehaviour {
     /// <summary>The object that the AI should move to</summary>
-    public Transform target;
+    public Transform persona;
     IAstarAI ai;
     [SerializeField]
     private Estado estado;
 
+
+
     void OnEnable () {
-        Debug.Log("Enabled");
         ai = GetComponent<IAstarAI>();
         estado = Estado.IDLE;
         // Update the destination right before searching for a path as well.
@@ -42,7 +43,6 @@ public class Follower : MonoBehaviour {
 
     /// <summary>Updates the AI's destination every frame</summary>
     void Update () {
-        Debug.Log("Decidiendo");
         DecidirQueHacer();
     }
 
@@ -50,28 +50,27 @@ public class Follower : MonoBehaviour {
         if(estado == Estado.IDLE) {
             // Lo unico que lo puede sacar de este estado seria que lo toque un usuario
             // Esto podria ser desde un OnCollision aca o en el usuario
-            Debug.Log("No lo puedo sacar de aca");
         }  else if(estado == Estado.TRABAJANDO) {
-            // Obtenemos el estado del target y si se movio switcheamos aca a siguiendo
-            if(target != null){
-                if(!TargetEstaParado()){
+            // Obtenemos el estado del persona y si se movio switcheamos aca a siguiendo
+            if(persona != null){
+                if(!PersonaEstaParada()){
                     CambiarEstado(Estado.SIGUIENDO);
                 }
             } 
-            // Si no hay target porque se fue volvemos a IDLE (opcionalmente podriamos matarlo)
-            if(target == null) {
+            // Si no hay persona porque se fue volvemos a IDLE (opcionalmente podriamos matarlo)
+            if(persona == null) {
                 CambiarEstado(Estado.IDLE);
             }
         } else if(estado == Estado.SIGUIENDO) {
-            if (target != null && ai != null) ai.destination = target.position;
-            // Obtenemos el estado del target y si se paro switcheamos aca a trabajando
-            if(target != null){
-                if(TargetEstaParado()){
+            if (persona != null && ai != null) ai.destination = persona.position;
+            // Obtenemos el estado del persona y si se paro switcheamos aca a trabajando
+            if(persona != null){
+                if(PersonaEstaParada()){
                     CambiarEstado(Estado.TRABAJANDO);
                 }
             }
-            // Si no hay target porque se fue volvemos a IDLE (opcionalmente podriamos matarlo)
-            if(target == null) {
+            // Si no hay persona porque se fue volvemos a IDLE (opcionalmente podriamos matarlo)
+            if(persona == null) {
                 CambiarEstado(Estado.IDLE);
             }
         }   else if(estado == Estado.CONVIRTIENDOSE) {
@@ -87,8 +86,8 @@ public class Follower : MonoBehaviour {
         }
     }
 
-    bool TargetEstaParado(){
-        return target.GetComponent<Seguido>().EstaParado();
+    bool PersonaEstaParada(){
+        return persona.GetComponent<Seguido>().EstaParado();
     }
 
     //TODO: para que esto funcione correctamente el collider de las personas deberia aumentar dependiendo la cantidad de seguidores
@@ -97,30 +96,35 @@ public class Follower : MonoBehaviour {
         if(other.gameObject.tag == "persona") 
         {
             Debug.Log("Dale que entro");
-            if (estado == Estado.IDLE) {
-                if(other.gameObject.tag == "persona") {
-                    Debug.Log("entro aca");
+            if (estado == Estado.IDLE)
+            {
                     other.gameObject.GetComponent<Seguido>().EmpezarASeguir(gameObject);
-                }
-            } else if (estado == Estado.SIGUIENDO) {
-                // Si mi target tiene menos seguidores que el extranjero, hacemos el switch
-                if(other != null && target != null)
+            }
+            else if (estado == Estado.SIGUIENDO)
+            {
+                // Si mi persona tiene menos seguidores que el extranjero, hacemos el switch
+                if(other != null && persona != null)
                 {
-                    if(other.gameObject.GetComponent<Seguido>().GetNumSeguidores() >     target.GetComponent<Seguido>().GetNumSeguidores()) {
-                        target.gameObject.GetComponent<Seguido>().DejarDeSeguir(gameObject);
-                        other.gameObject.GetComponent<Seguido>().EmpezarASeguir(gameObject);
+                    
+                    if(other.gameObject.GetComponent<Seguido>().GetNumSeguidores() > persona.GetComponent<Seguido>().GetNumSeguidores())
+                    {
+                        other.gameObject.GetComponent<Seguido>().EmpezarASeguir(gameObject);    
                     }
+                    
                 }
-            }   else if (estado == Estado.TRABAJANDO) {
+            }
+            else if (estado == Estado.TRABAJANDO)
+            {
                 //TODO: por ahora si está trabajando hacemos lo mismo que si estuviera siguiendo
                 // Pero habrçia que agregar variaciones al comportamientoss
-                // Si mi target tiene menos seguidores que el extranjero, hacemos el switch
-                if(other != null && target != null)
+                // Si mi persona tiene menos seguidores que el extranjero, hacemos el switch
+                if(other != null && persona != null)
                 {
-                    if(other.gameObject.GetComponent<Seguido>().GetNumSeguidores() > target.GetComponent<Seguido>().GetNumSeguidores()) {
-                        target.gameObject.GetComponent<Seguido>().DejarDeSeguir(gameObject);
+                   
+                    if(other.gameObject.GetComponent<Seguido>().GetNumSeguidores() > persona.GetComponent<Seguido>().GetNumSeguidores())
+                    {
                         other.gameObject.GetComponent<Seguido>().EmpezarASeguir(gameObject);
-                    }
+                    }                    
                 }
             }   
         }
@@ -128,13 +132,13 @@ public class Follower : MonoBehaviour {
 
     // Esta funcion se ejecuta desde la persona como devolucion a cuando le mandamos DejarDeSeguir();
     public void VaciarSeguido(GameObject exSeguido) {
-        target = null;
+        persona = null;
         CambiarEstado(Estado.CONVIRTIENDOSE);
     }
 
     //Esta funcion la llamamos desde el seguido, nos la devuelve cuando le damos a EmpezarASeguir();
     public void ConfirmarNuevoSeguido(GameObject nuevoSeguido){
-        target = nuevoSeguido.transform;
+        persona = nuevoSeguido.transform;
         CambiarEstado(Estado.SIGUIENDO);
     }
 }
