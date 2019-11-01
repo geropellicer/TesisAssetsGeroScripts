@@ -13,12 +13,14 @@ public class Seguido : MonoBehaviour {
         return parado;
     }
     
+    [SerializeField]
     private int numSeguidores = 0;
     private List<GameObject> seguidores;
 
 
     void Awake()
     {
+        seguidores = new List<GameObject>();
         //For good measure, set the previous locations
         for(int i = 0; i < previousLocations.Length; i++)
         {
@@ -51,7 +53,7 @@ public class Seguido : MonoBehaviour {
         {
             previousLocations[i] = previousLocations[i+1];
         }
-        previousLocations[previousLocations.Length - 1] = objectTransfom.position;
+        previousLocations[previousLocations.Length - 1] = transform.position;
         
         //Check the distances between the points in your previous locations
         //If for the past several updates, there are no movements smaller than the threshold,

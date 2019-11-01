@@ -22,10 +22,13 @@ public class Follower : MonoBehaviour {
     /// <summary>The object that the AI should move to</summary>
     public Transform target;
     IAstarAI ai;
+    [SerializeField]
     private Estado estado;
 
     void OnEnable () {
+        Debug.Log("Enabled");
         ai = GetComponent<IAstarAI>();
+        estado = Estado.IDLE;
         // Update the destination right before searching for a path as well.
         // This is enough in theory, but this script will also update the destination every
         // frame as the destination is used for debugging and may be used for other things by other
@@ -39,6 +42,7 @@ public class Follower : MonoBehaviour {
 
     /// <summary>Updates the AI's destination every frame</summary>
     void Update () {
+        Debug.Log("Decidiendo");
         DecidirQueHacer();
     }
 
@@ -46,6 +50,7 @@ public class Follower : MonoBehaviour {
         if(estado == Estado.IDLE) {
             // Lo unico que lo puede sacar de este estado seria que lo toque un usuario
             // Esto podria ser desde un OnCollision aca o en el usuario
+            Debug.Log("No lo puedo sacar de aca");
         }  else if(estado == Estado.TRABAJANDO) {
             // Obtenemos el estado del target y si se movio switcheamos aca a siguiendo
             if(target != null){
@@ -87,17 +92,38 @@ public class Follower : MonoBehaviour {
     }
 
     //TODO: para que esto funcione correctamente el collider de las personas deberia aumentar dependiendo la cantidad de seguidores
-    private void OnCollisionEnter2D(Collision2D other) {
-        if (estado == Estado.IDLE) {
-            if(other.gameObject.tag == "persona") {
-            }
-        } else if (estado == Estado.SIGUIENDO) {
-            // Si mi target tiene menos seguidores que el extranjero, hacemos el switch
-            if(other.gameObject.GetComponent<Seguido>().GetNumSeguidores() < target.GetComponent<Seguido>().GetNumSeguidores()) {
-                target.gameObject.GetComponent<Seguido>().DejarDeSeguir(gameObject);
-                other.gameObject.GetComponent<Seguido>().EmpezarASeguir(gameObject);
-            }
-        }        
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        if(other.gameObject.tag == "persona") 
+        {
+            Debug.Log("Dale que entro");
+            if (estado == Estado.IDLE) {
+                if(other.gameObject.tag == "persona") {
+                    Debug.Log("entro aca");
+                    other.gameObject.GetComponent<Seguido>().EmpezarASeguir(gameObject);
+                }
+            } else if (estado == Estado.SIGUIENDO) {
+                // Si mi target tiene menos seguidores que el extranjero, hacemos el switch
+                if(other != null && target != null)
+                {
+                    if(other.gameObject.GetComponent<Seguido>().GetNumSeguidores() >     target.GetComponent<Seguido>().GetNumSeguidores()) {
+                        target.gameObject.GetComponent<Seguido>().DejarDeSeguir(gameObject);
+                        other.gameObject.GetComponent<Seguido>().EmpezarASeguir(gameObject);
+                    }
+                }
+            }   else if (estado == Estado.TRABAJANDO) {
+                //TODO: por ahora si está trabajando hacemos lo mismo que si estuviera siguiendo
+                // Pero habrçia que agregar variaciones al comportamientoss
+                // Si mi target tiene menos seguidores que el extranjero, hacemos el switch
+                if(other != null && target != null)
+                {
+                    if(other.gameObject.GetComponent<Seguido>().GetNumSeguidores() > target.GetComponent<Seguido>().GetNumSeguidores()) {
+                        target.gameObject.GetComponent<Seguido>().DejarDeSeguir(gameObject);
+                        other.gameObject.GetComponent<Seguido>().EmpezarASeguir(gameObject);
+                    }
+                }
+            }   
+        }
     }
 
     // Esta funcion se ejecuta desde la persona como devolucion a cuando le mandamos DejarDeSeguir();

@@ -69,7 +69,8 @@ public class persona : MonoBehaviour
     {
         if (funcionando)
         {
-            Agrandar(factorAgrandar);
+            // TODO: Sacar o ajustar
+            //Agrandar(factorAgrandar);
         }
         if (Time.time > nextActionTime)
         {
