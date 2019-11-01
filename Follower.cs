@@ -3,14 +3,14 @@ using System.Collections;
 using Pathfinding;
 
 /// <summary>
-/// Sets the destination of an AI to the position of a specified object.
-/// This component should be attached to a GameObject together with a movement script such as AIPath, RichAI or AILerp.
-/// This component will then make the AI move towards the <see cref="persona"/> set on this component.
-///
-/// See: <see cref="Pathfinding.IAstarAI.destination"/>
-///
-/// [Open online documentation to see images]
+/// Maneja el comportamiento del sujeto alrededor de una persona y en estado Idle cuando no hay persona.
 /// </summary>
+
+/// <summary>Lista de posibles estados que puede adquirir un follower.
+/// IDLE: No hay persona, boludea 
+/// SIGUIENDO: Se dedica a ir tras una persona en movimiento.
+/// CONVIRTIENDOSE: Frame/s de transicion de cuando estaba siguiendo a una persona y otra persona con mas seguidores lo capta.
+/// TRABAJANDO: Cuando una persona a la que esta siguiendo se para, se pone a trabajar. </summary>
 public enum Estado {
     IDLE,
     SIGUIENDO,
@@ -19,16 +19,34 @@ public enum Estado {
 }
 [UniqueComponent(tag = "ai.destination")]
 public class Follower : MonoBehaviour {
-    /// <summary>The object that the AI should move to</summary>
+    
+    /// <summary>La persona que debe seguir este Follower</summary>
     public Transform persona;
+
+    /// <summary>Referencia al AI the A*</summary>
     IAstarAI ai;
+
+    /// <summary>El estado actual del follower</summary>
     [SerializeField]
     private Estado estado;
+
+    /// <summary>Referencia al sprite renderer y al color para cambiarle el color cuando sigue a una persona.</summary>    
+    private SpriteRenderer sR;
+
+    /// <summary>Guardamos el color que vamos a aplicarle al sR en una variable.</summary>    
+    private Color colorSprite;
+
+    /// <summary>Devolvemos si la persona que seguimos esta parada o no.</summary>
+    bool PersonaEstaParada(){
+        return persona.GetComponent<Seguido>().EstaParado();
+    }
+
 
 
 
     void OnEnable () {
         ai = GetComponent<IAstarAI>();
+        sR = GetComponent<SpriteRenderer>();
         estado = Estado.IDLE;
         // Update the destination right before searching for a path as well.
         // This is enough in theory, but this script will also update the destination every
@@ -41,11 +59,12 @@ public class Follower : MonoBehaviour {
         if (ai != null) ai.onSearchPath -= Update;
     }
 
-    /// <summary>Updates the AI's destination every frame</summary>
+    /// <summary>Todos los frames evaluamos que hacer dependiendo el estado y los eventos</summary>
     void Update () {
         DecidirQueHacer();
     }
 
+    /// <summary>Todos los frames evaluamos que hacer dependiendo el estado y los eventos</summary>
     void DecidirQueHacer() {
         if(estado == Estado.IDLE) {
             // Lo unico que lo puede sacar de este estado seria que lo toque un usuario
@@ -80,66 +99,75 @@ public class Follower : MonoBehaviour {
         }  
     }
 
+    /// <summary>Siempre que pasamos de un estado al otro no deberiamos asignar la variable directamente, si no pasar ppor aca
+    /// para hacer todsos los chequeos en un solo lugar y si fuera necesario implementar hooks</summary>
     void CambiarEstado(Estado nuevoEstado) {
         if(estado != nuevoEstado) {
             estado = nuevoEstado;
         }
     }
 
-    bool PersonaEstaParada(){
-        return persona.GetComponent<Seguido>().EstaParado();
-    }
 
-    //TODO: para que esto funcione correctamente el collider de las personas deberia aumentar dependiendo la cantidad de seguidores
+    /// <summary>Cuando entramos en un Trigger debemos manejar los cambios. En principio las reglas debieran ser:
+    /// Si es una persona (a traves del Seguido), lo manejamos desde aca porque el seguido no tiene OnTriggerEnter
+    /// Si es con otro sujeto: de la misma persona, ignoramos. De otra persona, maneja quien tiene persona con mas seguidores.</summary>
     void OnTriggerEnter2D(Collider2D other)
     {
-        if(other.gameObject.tag == "persona") 
-        {
-            Debug.Log("Dale que entro");
-            if (estado == Estado.IDLE)
-            {
-                    other.gameObject.GetComponent<Seguido>().EmpezarASeguir(gameObject);
+        if(other.gameObject.tag == "persona"){
+            if(persona == null || GameObject.ReferenceEquals(persona, other.gameObject)){
+                ManejarColisionesConPersona(other);
             }
-            else if (estado == Estado.SIGUIENDO)
-            {
-                // Si mi persona tiene menos seguidores que el extranjero, hacemos el switch
-                if(other != null && persona != null)
-                {
-                    
-                    if(other.gameObject.GetComponent<Seguido>().GetNumSeguidores() > persona.GetComponent<Seguido>().GetNumSeguidores())
-                    {
-                        other.gameObject.GetComponent<Seguido>().EmpezarASeguir(gameObject);    
-                    }
-                    
-                }
-            }
-            else if (estado == Estado.TRABAJANDO)
-            {
-                //TODO: por ahora si está trabajando hacemos lo mismo que si estuviera siguiendo
-                // Pero habrçia que agregar variaciones al comportamientoss
-                // Si mi persona tiene menos seguidores que el extranjero, hacemos el switch
-                if(other != null && persona != null)
-                {
-                   
-                    if(other.gameObject.GetComponent<Seguido>().GetNumSeguidores() > persona.GetComponent<Seguido>().GetNumSeguidores())
-                    {
-                        other.gameObject.GetComponent<Seguido>().EmpezarASeguir(gameObject);
-                    }                    
-                }
-            }   
         }
+        if(other.gameObject.tag == "sujeto"){
+            // Si somos huerfanos, no hacemos nada cuando nos encontramos con otro sujeto. Solo si nos encontramos con una person (arriba).
+            // Pero no cuando nos encontramos con otro sujeto porque en caso de que el otro sea huerfano no pasa ninguna interaccion
+            // y en caso de que el otro no lo sea se manejara en el otro (abajo)
+            if(persona != null) {
+                // Si el otro sujeto no tiene persona, es huerfano, manejamos aca
+                if(other.gameObject.GetComponent<Follower>().persona == null){
+                    ManejarColisionesConSujetoHuerfano();
+                } else if(persona.GetComponent<Seguido>().GetNumSeguidores > other.gameObject.GetComponent<Follower>().persona.GetNumSeguidores){
+                    ManejarColisionesConSujeto();
+                }
+            }
+        }
+    }
+
+    /// <summary>Cuando tocamos un trigger y es una persona y nosotros no tenemos persona 
+    /// (somos huerfanos o tenemos una persona distinta).</summary>
+    void ManejarColisionesConPersona(Collider2D other){
+        other.gameObject.GetComponent<Seguido>().SolicitarEmpezarASeguir(gameObject, false);    
+    }
+
+    /// <summary>Cuando tocamos un trigger y es un sujeto huerfano y nosotros tenemos persona, lo captamos.</summary>
+    void ManejarColisionesConSujetoHuerfano(Collider2D other){
+        // Notar que no le pasamos este sujeto como parametro, sino el que colisiono con nosotros
+        // Notar que se lo mandamos a esta persona
+        persona.GetComponent<Seguido>().SolicitarEmpezarASeguir(other.gameObject, false);            
+    }
+
+    /// <summary>Cuando tocamos un trigger y es un sujeto cuya persona tiene menos seguidores que este</summary>
+    void ManejarColisionesConSujeto(Collider2D other){
+        // Notar que no le pasamos este sujeto como parametro, sino el que colisiono con nosotros
+        // Notar que se lo mandamos a esta persona
+        // Notar que le pasamos true porque tiene persona
+        persona.GetComponent<Seguido>().SolicitarEmpezarASeguir(other.gameObject, true);                    
     }
 
     // Esta funcion se ejecuta desde la persona como devolucion a cuando le mandamos DejarDeSeguir();
     public void VaciarSeguido(GameObject exSeguido) {
         persona = null;
         CambiarEstado(Estado.CONVIRTIENDOSE);
+        colorSprite = new Color(1,1,1,1);
+        sR.color = colorSprite;
     }
 
     //Esta funcion la llamamos desde el seguido, nos la devuelve cuando le damos a EmpezarASeguir();
     public void ConfirmarNuevoSeguido(GameObject nuevoSeguido){
         persona = nuevoSeguido.transform;
         CambiarEstado(Estado.SIGUIENDO);
+        colorSprite = nuevoSeguido.GetComponent<Seguido>.colorSprite;
+        sR.color = colorSprite;
     }
 }
 

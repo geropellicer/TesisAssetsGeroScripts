@@ -4,20 +4,30 @@ using UnityEngine;
 
 public class persona : MonoBehaviour
 {
+    /// <summary>Referencia a las variables blobales de la escena</summary>
     globalVariables gV;
 
+    /// <summary>Para no ejecutar el update todo el tiempo, esta variable determina la proxima vez que se debe ejecutar 
+    /// basado en el intervalo definido</summary>
     float nextActionTime;
+
+    /// <summary>Cada cuanto se ejecutará el update</summary>
     float intervalo;
+
+    /// <summary>Referencia al audio</summary>
     AudioSource audio;
 
+    /// <summary>Para seleccionar que kinect la spwneó y cual la está siguiendo</summary>
     public enum kin
     {
         kin1,
         kin2
     }
+
+    /// <summary>Referencia a la kinect que spawneó esta persona</summary>
     public kin kinectAsignada;
 
-
+    /// <summary>(VIEJO) Sujetos a los que les extraía recursos.</summary>
     [SerializeField]
     List<GameObject> sujetosInfluenciados;
 
