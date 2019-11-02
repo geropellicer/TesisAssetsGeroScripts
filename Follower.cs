@@ -17,7 +17,7 @@ public enum Estado {
     CONVIRTIENDOSE,
     TRABAJANDO
 }
-[UniqueComponent(tag = "ai.destination")]
+
 public class Follower : MonoBehaviour {
     
     /// <summary>La persona que debe seguir este Follower</summary>
@@ -41,18 +41,57 @@ public class Follower : MonoBehaviour {
         return persona.GetComponent<Seguido>().EstaParado();
     }
 
+    [SerializeField]
+    /// <summary> Velocidad de desplazamiento mínima para cuando camina
+    private float velMin;
 
+    [SerializeField]
+    /// <summary> Velocidad de desplazamiento mínima para cuando camina
+    private float velMax;
+
+    GameObject globalManager;   
+    private globalVariables gV; 
+    private AIPath aiP;
+    private Animator an;
+    private GeroDestinationSetter gds;
+
+    Vector3 posLugarDeTrabajo;
+    int tiempoActualTrabajar = 0;
+    int tiempoTotalTrabajar = Random.Range(200,450);
+    enum TRABAJANDO {
+        buscandoTrabajo,
+        caminandoAlTrabajo,
+        trabajando,
+    }
+    private TRABAJANDO subEstadoActualTrabajando;
+
+    int tiempoActualRumiar = 0;
+    int tiempoTotalRumiar = Random.Range(200,450);
+    enum IDLE
+    {
+        buscandoLugar,
+        caminando,
+        rumiando
+    }
+    [SerializeField]
+    private IDLE subEstadoActualIdle;
 
 
     void OnEnable () {
-        ai = GetComponent<IAstarAI>();
         sR = GetComponent<SpriteRenderer>();
+        aiP = GetComponent<AIPath>();
+        gds = GetComponent<GeroDestinationSetter>();
+        an = GetComponent<Animator>();
+
+        globalManager = GameObject.Find("GlobalManager");
+        gV = globalManager.GetComponent<globalVariables>();
+        
         estado = Estado.IDLE;
-        // Update the destination right before searching for a path as well.
-        // This is enough in theory, but this script will also update the destination every
-        // frame as the destination is used for debugging and may be used for other things by other
-        // scripts as well. So it makes sense that it is up to date every frame.
-        if (ai != null) ai.onSearchPath += Update;
+        subEstadoActualTrabajando = TRABAJANDO.buscandoTrabajo;
+        subEstadoActualIdle = IDLE.buscandoLugar;
+
+        velMin = Random.Range(0.33f, 2);
+        velMax = Random.Range(5, 10);
     }
 
     void OnDisable () {
@@ -69,6 +108,7 @@ public class Follower : MonoBehaviour {
         if(estado == Estado.IDLE) {
             // Lo unico que lo puede sacar de este estado seria que lo toque un usuario
             // Esto podria ser desde un OnCollision aca o en el usuario
+            DecidirSubEstadoIdle();
         }  else if(estado == Estado.TRABAJANDO) {
             // Obtenemos el estado del persona y si se movio switcheamos aca a siguiendo
             if(persona != null){
@@ -80,11 +120,12 @@ public class Follower : MonoBehaviour {
             if(persona == null) {
                 CambiarEstado(Estado.IDLE);
             }
+            DecidirSubEstadoTrabajando();
         } else if(estado == Estado.SIGUIENDO) {
             if (persona != null && ai != null) ai.destination = persona.position;
             // Obtenemos el estado del persona y si se paro switcheamos aca a trabajando
             if(persona != null){
-                if(PersonaEstaParada()){
+                if(PersonaEstaParada() && GetComponent<AIPath>().reachedDestination){
                     CambiarEstado(Estado.TRABAJANDO);
                 }
             }
@@ -103,6 +144,18 @@ public class Follower : MonoBehaviour {
     /// para hacer todsos los chequeos en un solo lugar y si fuera necesario implementar hooks</summary>
     void CambiarEstado(Estado nuevoEstado) {
         if(estado != nuevoEstado) {
+            if(nuevoEstado == Estado.TRABAJANDO){
+                subEstadoActualTrabajando = TRABAJANDO.buscandoTrabajo;
+                aiP.canSearch = false;
+                gds.ClearDestination();
+            }
+
+            if(nuevoEstado == Estado.SIGUIENDO){
+                aiP.canSearch = true;
+                gds.SetDestination(persona);
+            }
+            
+            Debug.Log("Se efectuo un cambio de estado: de " + estado + " a " + nuevoEstado);
             estado = nuevoEstado;
         }
     }
@@ -168,6 +221,136 @@ public class Follower : MonoBehaviour {
         CambiarEstado(Estado.SIGUIENDO);
         colorSprite = nuevoSeguido.GetComponent<Seguido>().GetColorSprite();
         sR.color = colorSprite;
+    }
+
+
+
+    // Trabajando
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    void DecidirSubEstadoTrabajando() 
+    {
+        if (subEstadoActualTrabajando == TRABAJANDO.buscandoTrabajo)
+        {
+            posLugarDeTrabajo = Utilidades.PuntoRandom(gV.piso, persona.position, 8);
+            gds.SetDestination(posLugarDeTrabajo);
+
+            if(posLugarDeTrabajo != Vector3.zero && posLugarDeTrabajo != null){
+                subEstadoActualTrabajando = TRABAJANDO.caminandoAlTrabajo;
+                an.SetTrigger("caminando");
+                float vel = SetVelocidadRandom();
+                ActualizarVelAn(vel);
+                aiP.maxSpeed = vel;
+            }
+        }
+        else if (subEstadoActualTrabajando == TRABAJANDO.caminandoAlTrabajo)
+        {
+            if (posLugarDeTrabajo == Vector3.zero || posLugarDeTrabajo == null)
+            {
+                Debug.LogWarning("Error: Se intenta ir a un lugar de trabajo no inicializado");
+                subEstadoActualTrabajando = TRABAJANDO.buscandoTrabajo;
+                return;
+            }
+
+            if (aiP.reachedDestination)
+            {
+                subEstadoActualTrabajando = TRABAJANDO.trabajando;
+                an.SetTrigger("usandoMartillo");
+                ActualizarVelAn(0);
+                SetTiempoTrabajar();
+            }
+
+            // Si no ha llegado a detino el AIPath lo va a llevar, acá no debemos hacer nada
+
+        }
+        else if (subEstadoActualTrabajando == TRABAJANDO.trabajando)
+        {
+            // Aca que espere un rato
+            if(tiempoActualTrabajar > tiempoTotalTrabajar){
+                subEstadoActualTrabajando = TRABAJANDO.buscandoTrabajo;
+                an.SetTrigger("idle"); 
+            } else {
+                tiempoActualTrabajar ++;
+            }
+        }
+        else
+        {
+            Debug.LogError("ERROR: no hay ningun subestado trabajando asignado");
+        }
+    
+    }
+
+
+    // Trabajando
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    void DecidirSubEstadoIdle()
+    {
+        if(subEstadoActualIdle == IDLE.buscandoLugar)
+        {
+            float vel = SetVelocidadRandom();
+            aiP.maxSpeed = vel;
+            gds.SetDestination(Utilidades.PuntoRandom(gV.piso, transform.position, 25));
+            subEstadoActualIdle = IDLE.caminando;
+            an.SetTrigger("caminando");
+            ActualizarVelAn(vel);
+
+        } else if(subEstadoActualIdle == IDLE.caminando)
+        {
+            if (aiP.reachedDestination)
+            {
+                subEstadoActualIdle = IDLE.rumiando;
+                ActualizarVelAn(0);
+                SetTiempoRumiar();
+            }
+        } else if(subEstadoActualIdle == IDLE.rumiando)
+        {
+            //Chequear el contador random y si se cumple, vaciar el destino idle y pasarlo a buscando objetivo
+            if (tiempoActualRumiar >= tiempoTotalRumiar)
+            {
+                subEstadoActualIdle = IDLE.buscandoLugar;
+            }
+            else
+            {
+                tiempoActualRumiar++;
+            }
+        }
+        else
+        {
+            Debug.LogError("ERROR: no hay un subestado iddle seleccionado.");
+        }      
+    }
+
+    void SetTiempoRumiar()
+    {
+        tiempoActualRumiar = 0;
+        tiempoTotalRumiar = Random.Range(200, 450);
+    }
+    void SetTiempoTrabajar()
+    {
+        tiempoActualTrabajar = 0;
+        tiempoTotalTrabajar = Random.Range(120, 500);
+    }
+
+    void ActualizarVelAn(float vel)
+    {        
+        if(vel == 0)
+        {
+            an.SetFloat("velocidad", 0);
+        }
+        else
+        {
+            an.SetFloat("velocidad", .33f + Utilidades.Map(vel, 0f, 10f, 0f, 1f, true));
+        }
+    }
+
+    float SetVelocidadRandom()
+    {
+        return Random.Range(velMin, velMax);
     }
 }
 

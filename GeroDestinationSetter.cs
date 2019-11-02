@@ -7,15 +7,12 @@ namespace Pathfinding {
 	public class GeroDestinationSetter : VersionedMonoBehaviour {
 		/// <summary>The object that the AI should move to</summary>
         
-        enum tipo
-        {
-            Transform,
-            Vector3
-        }
-        [SerializeField]
-        tipo tipoDestinto = tipo.Vector3;
-        public Vector3 targetV3;
-		public Transform targetTransform;
+		[SerializeField]
+        private Vector3 targetV3;
+        
+		[SerializeField]
+		private Transform targetTransform;
+		
 		IAstarAI ai;
 
 		void OnEnable () {
@@ -33,13 +30,28 @@ namespace Pathfinding {
 
 		/// <summary>Updates the AI's destination every frame</summary>
 		void Update () {
-            if (tipoDestinto == tipo.Transform)
+            if (targetTransform != null)
             {
-                if (targetTransform != null && ai != null) ai.destination = targetTransform.position;
-            } else if(tipoDestinto == tipo.Vector3)
+                if (ai != null) ai.destination = targetTransform.position;
+            } else if(targetV3 == Vector3.zero)
             {
-                if (targetV3 != Vector3.zero && ai != null) ai.destination = targetV3;
+                if (ai != null) ai.destination = targetV3;
             }
+		}
+
+		public void SetDestination(Vector3 target) {
+			targetV3 = target;
+			targetTransform = null;
+		}
+
+		public void SetDestination(Transform target){
+			targetTransform = target;
+			targetV3 = Vector3.zero;
+		}
+
+		public void ClearDestination(){
+			targetTransform = null;
+			targetV3 = Vector3.zero;
 		}
 	}
 }
