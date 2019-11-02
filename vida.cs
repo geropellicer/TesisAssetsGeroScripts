@@ -555,7 +555,7 @@ public class vida : MonoBehaviour
             BuscarDestinoIdle();
             velocidadDeDesplazamientoActual = SetVelocidadRandom();
             aip.maxSpeed = velocidadDeDesplazamientoActual;
-            gds.targetV3 = destinoIdle;
+            gds.SetDestination(destinoIdle);
             subEstadoActualIdle = idle.caminando;
 
             an.SetTrigger("caminando");
@@ -617,7 +617,7 @@ public class vida : MonoBehaviour
             {
                 velocidadDeDesplazamientoActual = SetVelocidadRandom();
                 aip.maxSpeed = velocidadDeDesplazamientoActual;
-                gds.targetV3 = destinoComida.transform.position;
+                gds.SetDestination(destinoComida.transform.position);
                 subEstadoActualComiendo = comiendo.caminando;
 
                 ActualizarVelAn();
@@ -629,7 +629,7 @@ public class vida : MonoBehaviour
                 velocidadDeDesplazamientoActual = SetVelocidadRandom();
                 aip.maxSpeed = velocidadDeDesplazamientoActual;
                 destinoIdle = Utilidades.PuntoRandom(gV.piso, transform.position, 30);
-                gds.targetV3 = destinoIdle;
+                gds.SetDestination(destinoIdle);
 
                 ActualizarVelAn();
                 an.SetTrigger("caminandoCartelComida");
@@ -835,7 +835,7 @@ public class vida : MonoBehaviour
                     subEstadoActualReproduciendose = reproduciendose.caminandoHaciaPareja;
                     velocidadDeDesplazamientoActual = velocidadDeDesplazamientoMaxima;
                     aip.maxSpeed = velocidadDeDesplazamientoActual;
-                    gds.targetV3 = puntoDeEncuentroConPareja;
+                    gds.SetDestination(puntoDeEncuentroConPareja);
                     //Animacion
                     ActualizarVelAn();
                     an.SetTrigger("caminandoEnamorado");
@@ -866,7 +866,7 @@ public class vida : MonoBehaviour
                     //Antes de salir le mandamos toda la data al RVO para que se mueva
                     velocidadDeDesplazamientoActual = SetVelocidadRandom();
                     aip.maxSpeed = velocidadDeDesplazamientoActual;
-                    gds.targetV3 = puntoAExplorarPareja;
+                    gds.SetDestination(puntoAExplorarPareja);
                     //Animacion
                     ActualizarVelAn();
                     an.SetTrigger("caminandoEnamorado");
@@ -884,7 +884,7 @@ public class vida : MonoBehaviour
         //Antes de salir le mandamos toda la data al RVO para que se mueva
         velocidadDeDesplazamientoActual = SetVelocidadRandom();
         aip.maxSpeed = velocidadDeDesplazamientoActual;
-        gds.targetV3 = puntoAExplorarPareja;
+        gds.SetDestination(puntoAExplorarPareja);
         //Animacion
         ActualizarVelAn();
         an.SetTrigger("caminandoEnamorado");
@@ -900,7 +900,7 @@ public class vida : MonoBehaviour
         //Antes de salir le mandamos toda la data al RVO para que se mueva
         velocidadDeDesplazamientoActual = velocidadDeDesplazamientoMaxima;
         aip.maxSpeed = velocidadDeDesplazamientoActual;
-        gds.targetV3 = puntoDeEncuentroConPareja;
+        gds.SetDestination(puntoDeEncuentroConPareja);
         //Animacion
         ActualizarVelAn();
         an.SetTrigger("caminandoEnamorado");
@@ -1057,7 +1057,7 @@ public class vida : MonoBehaviour
             subEstadoActualTrabajando = trabajando.caminandoAlSoviet;
             velocidadDeDesplazamientoActual = velocidadDeDesplazamientoPromedio;
             aip.maxSpeed = velocidadDeDesplazamientoActual;
-            gds.targetV3 = sovietComunidad.GetComponent<Soviet>().puerta.position;
+            gds.SetDestination(sovietComunidad.GetComponent<Soviet>().puerta.position);
 
             an.SetTrigger("caminando");
         }
@@ -1078,7 +1078,7 @@ public class vida : MonoBehaviour
                 velocidadDeDesplazamientoActual = Random.Range(velocidadDeDesplazamientoPromedio, velocidadDeDesplazamientoMaxima);
                 aip.maxSpeed = velocidadDeDesplazamientoActual;
                 posLugarDeTrabajo = lugarDeTrabajo.GetComponent<edificio>().GetSpotTrabajo();
-                gds.targetV3 = posLugarDeTrabajo;
+                gds.SetDestination(posLugarDeTrabajo);
 
                 if(trabajoActual == trabajo.fabricante)
                 {
@@ -1243,7 +1243,7 @@ public class vida : MonoBehaviour
             if (comidaCosechada >= comidaQuePuedeLlevar)
             {
                 aip.maxSpeed = velocidadDeDesplazamientoPromedio;
-                gds.targetV3 = lugarDeTrabajo.GetComponent<ArbustoDeComida>().fabricaCercana.GetComponent<FabricaDeComida>().GetPosicionDeposito();
+                gds.SetDestination(lugarDeTrabajo.GetComponent<ArbustoDeComida>().fabricaCercana.GetComponent<FabricaDeComida>().GetPosicionDeposito());
                 ActualizarVelAn();
                 an.SetTrigger("transportandoCrudo");
 
@@ -1260,7 +1260,7 @@ public class vida : MonoBehaviour
             }
             if (comidaFabricada >= comidaQuePuedeLlevar)
             {
-                gds.targetV3 = lugarDeTrabajo.GetComponent<FabricaDeComida>().GetPosicionDeposito();
+                gds.SetDestination(lugarDeTrabajo.GetComponent<FabricaDeComida>().GetPosicionDeposito());
                 aip.maxSpeed = velocidadDeDesplazamientoPromedio;
                 ActualizarVelAn();
                 an.SetTrigger("transportandoCocido");
@@ -1276,7 +1276,7 @@ public class vida : MonoBehaviour
             {
 
                 aip.maxSpeed = velocidadDeDesplazamientoPromedio;
-                gds.targetV3 = fabricaCercanaAsignada.GetComponent<FabricaDeComida>().GetPosicionDeposito();
+                gds.SetDestination(fabricaCercanaAsignada.GetComponent<FabricaDeComida>().GetPosicionDeposito());
                 ActualizarVelAn();
                 an.SetTrigger("transportandoVacio");
                 subEstadoDistribuyendo = distribuyendo.buscandoComidaProcesada;
@@ -1308,7 +1308,7 @@ public class vida : MonoBehaviour
                 subEstadoCosechando = cosechando.cosechando;
                 subEstadoActualTrabajando = trabajando.caminandoAlTrabajo;
 
-                gds.targetV3 = posLugarDeTrabajo;
+                gds.SetDestination(posLugarDeTrabajo);
                 velocidadDeDesplazamientoActual = velocidadDeDesplazamientoMaxima;
                 ActualizarVelAn();
 
@@ -1337,7 +1337,7 @@ public class vida : MonoBehaviour
                 subEstadoFabricando = fabricando.fabricando;
                 subEstadoActualTrabajando = trabajando.caminandoAlTrabajo;
 
-                gds.targetV3 = posLugarDeTrabajo;
+                gds.SetDestination(posLugarDeTrabajo);
                 velocidadDeDesplazamientoActual = velocidadDeDesplazamientoMaxima;
                 ActualizarVelAn();
 
@@ -1371,7 +1371,7 @@ public class vida : MonoBehaviour
                 subEstadoDistribuyendo = distribuyendo.dejandoComidaProcesada;
                 subEstadoActualTrabajando = trabajando.caminandoAlTrabajo;
 
-                gds.targetV3 = posLugarDeTrabajo;
+                gds.SetDestination(posLugarDeTrabajo);
                 velocidadDeDesplazamientoActual = velocidadDeDesplazamientoMaxima;
                 ActualizarVelAn();
 
@@ -1576,7 +1576,7 @@ public class vida : MonoBehaviour
         subEstadoActualConstruyendo = construyendo.caminandoAConstruccion;
         velocidadDeDesplazamientoActual = velocidadDeDesplazamientoMaxima;
         aip.maxSpeed = velocidadDeDesplazamientoActual;
-        gds.targetV3 = spotConstruccion.transform.position;
+        gds.SetDestination(spotConstruccion.transform.position);
         CambiarDeEstado(estado.construyendo);
         ActualizarVelAn();
         an.SetTrigger("caminandoMartillo");
@@ -1631,7 +1631,7 @@ public class vida : MonoBehaviour
             }
         } else if (subEstadoActualResistiendo == resistiendo.yendoAPersona)
         {
-            gds.targetV3 = personaEnemiga.position;
+            gds.SetDestination(personaEnemiga.position);
             if (aip.reachedDestination)
             {
                 subEstadoActualResistiendo = resistiendo.atacandoAPersona;
@@ -1650,7 +1650,7 @@ public class vida : MonoBehaviour
             destinoIdle = Utilidades.PuntoRandom(gV.piso, transform.position, 45);
             velocidadDeDesplazamientoActual = SetVelocidadRandom();
             aip.maxSpeed = velocidadDeDesplazamientoActual;
-            gds.targetV3 = destinoIdle;
+            gds.SetDestination(destinoIdle);
             subEstadoActualResistiendo = resistiendo.yendoALugarIdle;
 
             an.SetTrigger("caminandoLanza");

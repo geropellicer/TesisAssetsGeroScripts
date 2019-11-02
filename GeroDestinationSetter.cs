@@ -32,10 +32,14 @@ namespace Pathfinding {
 		void Update () {
             if (targetTransform != null)
             {
-                if (ai != null) ai.destination = targetTransform.position;
-            } else if(targetV3 == Vector3.zero)
+                if (ai != null){
+					ai.destination = targetTransform.position;
+				}
+            } else if(targetV3 != Vector3.zero)
             {
-                if (ai != null) ai.destination = targetV3;
+                if (ai != null){
+					ai.destination = targetV3;
+				}
             }
 		}
 

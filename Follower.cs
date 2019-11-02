@@ -23,9 +23,6 @@ public class Follower : MonoBehaviour {
     /// <summary>La persona que debe seguir este Follower</summary>
     public Transform persona;
 
-    /// <summary>Referencia al AI the A*</summary>
-    IAstarAI ai;
-
     /// <summary>El estado actual del follower</summary>
     [SerializeField]
     private Estado estado;
@@ -57,16 +54,17 @@ public class Follower : MonoBehaviour {
 
     Vector3 posLugarDeTrabajo;
     int tiempoActualTrabajar = 0;
-    int tiempoTotalTrabajar = Random.Range(200,450);
+    int tiempoTotalTrabajar;
     enum TRABAJANDO {
         buscandoTrabajo,
         caminandoAlTrabajo,
         trabajando,
     }
-    private TRABAJANDO subEstadoActualTrabajando;
+     [SerializeField]
+     private TRABAJANDO subEstadoActualTrabajando;
 
     int tiempoActualRumiar = 0;
-    int tiempoTotalRumiar = Random.Range(200,450);
+    int tiempoTotalRumiar;
     enum IDLE
     {
         buscandoLugar,
@@ -92,10 +90,9 @@ public class Follower : MonoBehaviour {
 
         velMin = Random.Range(0.33f, 2);
         velMax = Random.Range(5, 10);
-    }
 
-    void OnDisable () {
-        if (ai != null) ai.onSearchPath -= Update;
+        tiempoTotalRumiar = Random.Range(200,450);
+        tiempoTotalTrabajar = Random.Range(200,450);
     }
 
     /// <summary>Todos los frames evaluamos que hacer dependiendo el estado y los eventos</summary>
@@ -122,11 +119,11 @@ public class Follower : MonoBehaviour {
             }
             DecidirSubEstadoTrabajando();
         } else if(estado == Estado.SIGUIENDO) {
-            if (persona != null && ai != null) ai.destination = persona.position;
             // Obtenemos el estado del persona y si se paro switcheamos aca a trabajando
             if(persona != null){
                 if(PersonaEstaParada() && GetComponent<AIPath>().reachedDestination){
                     CambiarEstado(Estado.TRABAJANDO);
+                    an.SetTrigger("idle");
                 }
             }
             // Si no hay persona porque se fue volvemos a IDLE (opcionalmente podriamos matarlo)
@@ -147,10 +144,15 @@ public class Follower : MonoBehaviour {
             if(nuevoEstado == Estado.TRABAJANDO){
                 subEstadoActualTrabajando = TRABAJANDO.buscandoTrabajo;
                 aiP.canSearch = false;
-                gds.ClearDestination();
+                //gds.ClearDestination();
+            }
+
+            if(nuevoEstado == Estado.IDLE){
+                subEstadoActualIdle = IDLE.buscandoLugar;
             }
 
             if(nuevoEstado == Estado.SIGUIENDO){
+                an.SetTrigger("caminando");
                 aiP.canSearch = true;
                 gds.SetDestination(persona);
             }
@@ -234,11 +236,12 @@ public class Follower : MonoBehaviour {
     {
         if (subEstadoActualTrabajando == TRABAJANDO.buscandoTrabajo)
         {
-            posLugarDeTrabajo = Utilidades.PuntoRandom(gV.piso, persona.position, 8);
+            posLugarDeTrabajo = Utilidades.PuntoRandom(gV.piso, persona.position, 25);
             gds.SetDestination(posLugarDeTrabajo);
 
             if(posLugarDeTrabajo != Vector3.zero && posLugarDeTrabajo != null){
                 subEstadoActualTrabajando = TRABAJANDO.caminandoAlTrabajo;
+                aiP.canSearch = true;
                 an.SetTrigger("caminando");
                 float vel = SetVelocidadRandom();
                 ActualizarVelAn(vel);
