@@ -40,7 +40,6 @@ public class Follower : MonoBehaviour {
     private GameObject zona;
 
     /// <summary> El sprite renderer del fondo del bicho </summary>
-    private SpriteRenderer sRZona;
 
 
     /// <summary> El HUE del color del bicho basado en la emocion que siente. </summary>
@@ -170,12 +169,15 @@ public class Follower : MonoBehaviour {
         return emocionActual;
     }
 
+    float nextActionTime;
+    float intervalo;
+    [SerializeField]
+    GameObject prefabManchaPiso;
+
+
 
     void OnEnable () {
-        zona = transform.Find("zona").gameObject;
-
         sR = GetComponent<SpriteRenderer>();
-        sRZona = zona.GetComponent<SpriteRenderer>();
         aiP = GetComponent<AIPath>();
         gds = GetComponent<GeroDestinationSetter>();
         an = GetComponent<Animator>();
@@ -193,9 +195,11 @@ public class Follower : MonoBehaviour {
         tiempoTotalRumiar = Random.Range(200,450);
         tiempoTotalTrabajar = Random.Range(200,450);
 
-        CambiarEmocion(EMOCION.NADA, 0);
         // Necesario para que al iniciaizar sean blancos
         brightnessColorEmocion = 100;
+
+        nextActionTime = Time.time + Random.Range(0f,2f);
+        intervalo = Random.Range(3f, 4f);
     }
 
     /// <summary>Todos los frames evaluamos que hacer dependiendo el estado y los eventos</summary>
@@ -203,6 +207,16 @@ public class Follower : MonoBehaviour {
         DecidirSentimientos();
         DecidirQueHacer();
         AsignarColorBicho();
+
+        if (Time.time > nextActionTime)
+        {
+            //Actualizar cada x segundos los almaceces y los soviets que existen
+            nextActionTime = Time.time + intervalo;
+            if(persona != null){
+                zona = Instantiate(prefabManchaPiso, transform.position, Quaternion.Euler(new Vector3(0, 0, Random.Range(0,360))));
+                zona.GetComponent<SpriteRenderer>().color = colorSpriteZona;
+            }
+        }
     }
 
     /// <summary>Todos los frames evaluamos como se siente dependiendo de como le afecten las antenas</summary>
@@ -397,7 +411,6 @@ public class Follower : MonoBehaviour {
         persona = null;
         CambiarEstado(Estado.CONVIRTIENDOSE);
         colorSpriteZona = new Color(1,1,1,0.25f);
-        sRZona.color = colorSpriteZona;
     }
 
     //Esta funcion la llamamos desde el seguido, nos la devuelve cuando le damos a EmpezarASeguir();
@@ -406,7 +419,6 @@ public class Follower : MonoBehaviour {
         CambiarEstado(Estado.SIGUIENDO);
         colorSpriteZona = nuevoSeguido.GetComponent<Seguido>().GetColorSprite();
         colorSpriteZona.a = 0.25f;
-        sRZona.color = colorSpriteZona;
     }
 
 
