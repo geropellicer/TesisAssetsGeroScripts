@@ -67,8 +67,6 @@ public class globalVariables : MonoBehaviour
 
     spawner sp;
 
-    public GameObject[] totems;
-
     // Start is called before the first frame update
     void Start() {
         nextActionTime = 0f;
@@ -112,11 +110,6 @@ public class globalVariables : MonoBehaviour
         } else{
             Debug.LogError("No hay un objeto piso asignado");
         }
-
-        totems[0].GetComponent<totem>().ActualizarCalibrado();
-        totems[1].GetComponent<totem>().ActualizarCalibrado();
-        totems[2].GetComponent<totem>().ActualizarCalibrado();
-        totems[3].GetComponent<totem>().ActualizarCalibrado();
     }
 
     // Update is called once per frame

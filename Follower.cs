@@ -27,11 +27,21 @@ public class Follower : MonoBehaviour {
     [SerializeField]
     private Estado estado;
 
-    /// <summary>Referencia al sprite renderer y al color para cambiarle el color cuando sigue a una persona.</summary>    
+    /// <summary>Referencia al sprite renderer para cambiar el color del bicho según lo que sienta.</summary>    
     private SpriteRenderer sR;
 
-    /// <summary>Guardamos el color que vamos a aplicarle al sR en una variable.</summary>    
-    private Color colorSprite;
+    /// <summary>Guardamos el color que vamos a aplicarle al sR del mismo bicho (EMOCION).</summary>    
+    private Color colorSpriteBicho;
+
+     /// <summary>Guardamos el color que vamos a aplicarle al sR de la zona (PERTENCIA A PERSONA).</summary>    
+    private Color colorSpriteZona;
+
+    /// <summary> El fondo del bicho que se pinta del color de la persona que lo posee </summary>
+    private GameObject zona;
+
+    /// <summary> El sprite renderer del fondo del bicho </summary>
+    private SpriteRenderer sRZona;
+
 
     /// <summary>Devolvemos si la persona que seguimos esta parada o no.</summary>
     bool PersonaEstaParada(){
@@ -141,8 +151,12 @@ public class Follower : MonoBehaviour {
         return emocionActual;
     }
 
+
     void OnEnable () {
+        zona = transform.Find("zona").gameObject;
+
         sR = GetComponent<SpriteRenderer>();
+        sRZona = zona.GetComponent<SpriteRenderer>();
         aiP = GetComponent<AIPath>();
         gds = GetComponent<GeroDestinationSetter>();
         an = GetComponent<Animator>();
@@ -360,16 +374,17 @@ public class Follower : MonoBehaviour {
     public void VaciarSeguido(GameObject exSeguido) {
         persona = null;
         CambiarEstado(Estado.CONVIRTIENDOSE);
-        colorSprite = new Color(1,1,1,1);
-        sR.color = colorSprite;
+        colorSpriteZona = new Color(1,1,1,0.25f);
+        sRZona.color = colorSpriteZona;
     }
 
     //Esta funcion la llamamos desde el seguido, nos la devuelve cuando le damos a EmpezarASeguir();
     public void ConfirmarNuevoSeguido(GameObject nuevoSeguido){
         persona = nuevoSeguido.transform;
         CambiarEstado(Estado.SIGUIENDO);
-        colorSprite = nuevoSeguido.GetComponent<Seguido>().GetColorSprite();
-        sR.color = colorSprite;
+        colorSpriteZona = nuevoSeguido.GetComponent<Seguido>().GetColorSprite();
+        colorSpriteZona.a = 0.25f;
+        sRZona.color = colorSpriteZona;
     }
 
 

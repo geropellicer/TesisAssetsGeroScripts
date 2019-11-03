@@ -65,8 +65,6 @@ public class totem : MonoBehaviour
     float minYin = 0;
     float maxYin = 1;
 
-    float minX, maxX, minY1, maxY1, minY2, maxY2;
-
     public enum WEBCAM
     {
         WEBCAM1,
@@ -117,8 +115,6 @@ public class totem : MonoBehaviour
         ani = GetComponent<Animation>();
 
         ondas = transform.GetChild(0).gameObject;
-
-        ActualizarCalibrado();
 
         transmitiendo = false;
         trackeado = false;
@@ -202,12 +198,10 @@ public class totem : MonoBehaviour
         float y = m.GetFloat(1);
         if(webcamTrackeando == WEBCAM.WEBCAM1)
         {
-            Debug.Log("X: " + x + " - " + minXin + " - " + maxXin + " - " + minX + " - " + maxX);
-            Debug.Log("Y: " + y + " - " + minYin + " - " + maxYin + " - " + minY1 + " - " + maxY1);
-            transform.localPosition = new Vector3(Utilidades.Map(x, minXin, maxXin, minX, maxX), Utilidades.Map(y, minYin, maxYin, minY1, maxY1), -0.1f);
+            transform.localPosition = new Vector3(Utilidades.Map(x, minXin, maxXin, gV.minX, gV.maxX), Utilidades.Map(y, minYin, maxYin, gV.minY1, gV.maxY1), -0.1f);
         } else if(webcamTrackeando == WEBCAM.WEBCAM2)
         {
-            transform.localPosition = new Vector3(Utilidades.Map(x, minXin, maxXin, minX, maxX), Utilidades.Map(y, minYin, maxYin, minY2, maxY2), -0.1f);
+            transform.localPosition = new Vector3(Utilidades.Map(x, minXin, maxXin, gV.minX, gV.maxX), Utilidades.Map(y, minYin, maxYin, gV.minY2, gV.maxY2), -0.1f);
         }
     }
 
@@ -247,17 +241,4 @@ public class totem : MonoBehaviour
         message2.values.Add(0);
         osc.Send(message2);
     }
-    /// <summary> Lo corremos al incio para obtener los bordes del mapa según cada cámara. </summary>
-    public void ActualizarCalibrado()
-    {
-        minX = gV.minX;
-        Debug.Log("Desde totem: minx local: " + minX + " - gv.minX: " + gV.minX);
-        maxX = gV.maxX;
-        minY1 = gV.minY1;
-        maxY1 = gV.maxY1;
-        minY2 = gV.minY2;
-        maxY2 = gV.maxY2;
-        Debug.Log("TOTEM " + gameObject.name + " actualizo su calibracion." + "minX: " + minX + " - maxX: " + maxX);
-    }
-
 }
