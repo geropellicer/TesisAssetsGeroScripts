@@ -33,7 +33,7 @@ public class puertaTotem : MonoBehaviour
     {
         if(objetoColisionado.tag == "persona")
         {
-            totem.GetComponent<totem>().EntrarColision(estaPuerta);
+           //totem.GetComponent<totem>().EntrarColision(estaPuerta);
         }
     }
 
@@ -41,7 +41,7 @@ public class puertaTotem : MonoBehaviour
     {
         if (objetoColisionado.tag == "persona")
         {
-            totem.GetComponent<totem>().SalirColision(estaPuerta);
+            //totem.GetComponent<totem>().SalirColision(estaPuerta);
         }
     }
 }

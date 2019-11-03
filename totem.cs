@@ -2,229 +2,126 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum tipoTotem
+public enum TIPOTOTEM
 {
-    explotacion,
-    gobierno,
-    medios
-}
-public enum modoTotemExplotacion
-{
-    saqueador, //rojo
-    reinversor, //azul
-    competencia, //amarillo
-    clasista //verde
-}
-public enum modoTotemGobierno
-{
-    proglobalizacion, //rojo
-    nacionalista, //azul
-    esclavista, //amarillo
-    concesivo //verde
-}
-public enum modoTotemMedios
-{
-    autoritario, //rojo
-    entretenimiento, //azul
-    publicidad, //amarillo
-    institucional //verde
+    PUBLICOESTATAL,
+    PUBLICOMILITAR,
+    PRIVADOCOMERCIAL,
+    PRIVADOENTRETENIMIENTO
 }
 
 [RequireComponent(typeof(AudioSource))]
 [RequireComponent(typeof(Animation))]
 public class totem : MonoBehaviour
 {
-    public tipoTotem tipoEsteTotem;
-    public modoTotemExplotacion modoExplotacion;
-    public modoTotemGobierno modoGobierno;
-    public modoTotemMedios modoMedios;
+    OSC osc;
+    globalVariables gV;
 
-    public GameObject puertaArriba, puertaAbajo, puertaDerecha, puertaIzquierda, ondas;
+    /// <summary> La IP del arudino con el que se va a comunicar por OSC
+    /// Se debe asignar desde la lectura por webcam del patron (predefinir que patron es que tipo) </summary>
+    public string ipArduino;
 
+    /// <summary> El tipo de totem que es este. En la escena debería haber uno de cada uno. 
+    /// Se debe asignar desde la lectura por webcam del patron (predefinir que patron es que tipo) </summary>
+    public TIPOTOTEM tipoEsteTotem;
+
+    /// <summary> Gráfico de ondas para dar una idea de sobre que forma está incidiendo.
+    /// TODO: ver si no se puede aplicar el waveform del audio como distorsión </summary>
+    public GameObject ondas;
+
+    /// <summary> Referencia al SpriteRederer component </summary>
     SpriteRenderer im;
+    
+    /// <summary> Referencia a la fuente de sonido.!-- TOOD: deberiamos cambiar por el envio OSC al totem </summary>
     AudioSource son;
+
+    /// <summary> Referencia al animation component</summary>    
     Animation ani;
 
-
+    /// <summary>Si ah sido detectado por las camaras y está siendo trackeado en el espacio.</summary>    
     [SerializeField]
-    AudioClip[] sonidos;
-    AudioClip audio1, audio2, audio3, audio4;
+    bool trackeado = false;
 
-    //Cuando entra en la zona de proyeccion y es captado transmite osea que "funciona", incide en la realidad
+
+    /// <summary>Cuando entra en la zona de proyeccion y es captado y está prendido
+    /// transmite osea que "funciona", incide en la realidad</summary>    
+    [SerializeField]
     bool transmitiendo = false;
 
-    //Llevamos la cuenta de cuantas personas (y opcionalmente bichos) estan en contacto con una determinad apuerta para
-    //Saber en que modo tendria que estar el totem
-    [SerializeField]
-    int puertaRoja, puertaAzul, puertaAmarilla, puertaVerde;
+    float minXin = 0;
+    float maxXin = 1;
+    float minYin = 0;
+    float maxYin = 1;
 
-    //El porcentaje de carga que lleva cada color, de 0 a 100
-    //Deberian vaciarse todos menos el color ganador en un cambio de color
-    [SerializeField]
-    int barritaRoja, barritaAzul, barritaAmarilla, barritaVerde;
-    
+    float minX, maxX, minY1, maxY1, minY2, maxY2;
+
+    public enum WEBCAM
+    {
+        WEBCAM1,
+        WEBCAM2
+    }
+    public WEBCAM webcamTrackeando;
+  
     // Start is called before the first frame update
     void Start()
     {
+        osc = GameObject.Find("OSC Manger").GetComponent<OSC>();
+
+        // Según que totem sea nos suscribimos al Tag OSC correspondiente
+        if(tipoEsteTotem == TIPOTOTEM.PRIVADOCOMERCIAL)
+        {
+            osc.SetAddressHandler("/Totem1/Entered/", EntroTotem);
+            osc.SetAddressHandler("/Totem1/Leave/", SalioTotem);
+            osc.SetAddressHandler("/Totem1/Update/", ActualizarTotemOsc);
+        } else if(tipoEsteTotem == TIPOTOTEM.PRIVADOENTRETENIMIENTO)
+        {
+            osc.SetAddressHandler("/Totem2/Entered/", EntroTotem);
+            osc.SetAddressHandler("/Totem2/Leave/", SalioTotem);
+            osc.SetAddressHandler("/Totem2/Update/", ActualizarTotemOsc);
+        } else if(tipoEsteTotem == TIPOTOTEM.PUBLICOESTATAL)
+        {
+            osc.SetAddressHandler("/Totem3/Entered/", EntroTotem);
+            osc.SetAddressHandler("/Totem3/Leave/", SalioTotem);
+            osc.SetAddressHandler("/Totem3/Update/", ActualizarTotemOsc);
+        } else if(tipoEsteTotem == TIPOTOTEM.PUBLICOMILITAR)
+        {
+            osc.SetAddressHandler("/Totem4/Entered/", EntroTotem);
+            osc.SetAddressHandler("/Totem4/Leave/", SalioTotem);
+            osc.SetAddressHandler("/Totem4/Update/", ActualizarTotemOsc);
+        }
+
+        gV = GameObject.Find("GlobalManager").GetComponent<globalVariables>();
+
         im = GetComponent<SpriteRenderer>();
         son = GetComponent<AudioSource>();
         ani = GetComponent<Animation>();
 
-        audio1 = sonidos[0];
-        audio2 = sonidos[1];
-        audio3 = sonidos[2];
-        audio4 = sonidos[3];
-        }
+        ondas = transform.GetChild(0).gameObject;
+
+        ActualizarCalibrado();
+    }
 
     // Update is called once per frame
     void Update()
     {
-        ManejarPuertas();
+        
     }
     
 
-    //Llamados desde ManejarPuertas() cuando una puerta hegemonica llena la barrita. Son tres sobrecargas segun el tipo de totem.
-    void CambiarModo(modoTotemExplotacion nuevoModo)
+    /// <summary> Solo si esta en el espacio y detectado, con este metodo prendemos el totem
+    /// para que comience a transmitir (incidir en la realidad) </summary>
+    void EmpezarATransmitir(int numWebcam)
     {
-        modoExplotacion = nuevoModo;
-        CambiarColorTotem();
-    }
-    void CambiarModo(modoTotemGobierno nuevoModo)
-    {
-        modoGobierno = nuevoModo;
-        CambiarColorTotem();
-    }
-    void CambiarModo(modoTotemMedios nuevoModo)
-    {
-        modoMedios = nuevoModo;
-        CambiarColorTotem();
-    }
-
-    //Llamado desde CambiarModo(), nunca se ejecuta directamente
-    void CambiarColorTotem()
-    {
-        if(tipoEsteTotem == tipoTotem.explotacion)
+        if(trackeado)
         {
-            switch (modoExplotacion)
-            {
-                case modoTotemExplotacion.saqueador:
-                    CambiarColor("rojo");
-                    CambiarOndas("rojas");
-                    CambiarSonidos(audio1);
-                    break;
-                case modoTotemExplotacion.reinversor:
-                    CambiarColor("azul");
-                    CambiarOndas("azules");
-                    CambiarSonidos(audio2);
-                    break;
-                case modoTotemExplotacion.competencia:
-                    CambiarColor("amarillo");
-                    CambiarOndas("amarillas");
-                    CambiarSonidos(audio3);
-                    break;
-                case modoTotemExplotacion.clasista:
-                    CambiarColor("verde");
-                    CambiarOndas("verdes");
-                    CambiarSonidos(audio4);
-                    break;
-                default:
-                    break;
-            }
-        } else if(tipoEsteTotem == tipoTotem.gobierno)
-        {
-            switch (modoGobierno)
-            {
-                case modoTotemGobierno.proglobalizacion:
-                    CambiarColor("rojo");
-                    CambiarOndas("rojas");
-                    CambiarSonidos(audio1);
-                    break;
-                case modoTotemGobierno.nacionalista:
-                    CambiarColor("azul");
-                    CambiarOndas("azules");
-                    CambiarSonidos(audio2);
-                    break;
-                case modoTotemGobierno.esclavista:
-                    CambiarColor("amarillo");
-                    CambiarOndas("amarillas");
-                    CambiarSonidos(audio3);
-                    break;
-                case modoTotemGobierno.concesivo:
-                    CambiarColor("verde");
-                    CambiarOndas("verdes");
-                    CambiarSonidos(audio4);
-                    break;
-                default:
-                    break;
-            }
-        }
-        else if(tipoEsteTotem == tipoTotem.medios)
-        {
-            switch (modoMedios)
-            {
-                case modoTotemMedios.autoritario:
-                    CambiarColor("rojo");
-                    CambiarOndas("rojas");
-                    CambiarSonidos(audio1);
-                    break;
-                case modoTotemMedios.entretenimiento:
-                    CambiarColor("azul");
-                    CambiarOndas("azules");
-                    CambiarSonidos(audio2);
-                    break;
-                case modoTotemMedios.publicidad:
-                    CambiarColor("amarillo");
-                    CambiarOndas("amarillas");
-                    CambiarSonidos(audio3);
-                    break;
-                case modoTotemMedios.institucional:
-                    CambiarColor("verde");
-                    CambiarOndas("verdes");
-                    CambiarSonidos(audio4);
-                    break;
-                default:
-                    break;
-            }
+            transmitiendo = true;
+            //Prender audio
+            //Cambiar modo si es necesario
+            //Emitir señales visuales de transmision
         }
     }
 
-    //Llamado desde CambiarColorTotem, nunca se ejecuta directamente
-    void CambiarColor(string color)
-    {
-        if(color == "rojo")
-        {
-            im.color = new Color(255, 0, 0);
-            barritaAmarilla = 0;
-            barritaAzul = 0;
-            barritaVerde = 0;
-        } else if(color == "amarillo")
-        {
-            im.color = new Color(255, 255, 0);
-            barritaAzul = 0;
-            barritaRoja = 0;
-            barritaVerde = 0;
-        } else if (color == "verde")
-        {
-            im.color = new Color(0, 255, 0);
-            barritaAmarilla = 0;
-            barritaAzul = 0;
-            barritaRoja = 0;
-        } else if (color == "azul")
-        {
-            im.color = new Color(0, 0, 255);
-            barritaAmarilla = 0;
-            barritaRoja = 0;
-            barritaVerde = 0;
-        }
-    }
-
-    void EmpezarATransmitir()
-    {
-        transmitiendo = true;
-        //Prender audio
-        //Cambiar modo si es necesario
-        //Emitir señales visuales de transmision
-    }
+    /// <summary> Apagamos el totem sea porque salio del trackeo o porque un usuario o los bichos lo apagaron. </summary>
     void TerminarDeTransmitir()
     {
         transmitiendo = false;
@@ -233,188 +130,66 @@ public class totem : MonoBehaviour
         //Dejar de emitir señales visuales de transmision
     }
 
-
-    //Cuando una persona (o eventualmente un bicho) le da a una puerta, lo agregamos para que le de mas peso a esa puerta
-    public void EntrarColision(tipoPuerta puerta)
+    /// <summary> Cuando el OSC detecta la imagen de este totem lo ponemos como trackeado </summary>
+    void SetTrackeando()
     {
-        switch (puerta)
-        {
-            case tipoPuerta.roja:
-                puertaRoja++;
-                break;
-            case tipoPuerta.azul:
-                puertaAzul++;
-                break;
-            case tipoPuerta.amarilla:
-                puertaAmarilla++;
-                break;
-            case tipoPuerta.verde:
-                puertaVerde++;
-                break;
-            default:
-                break;
-        }
+        trackeado = true;
     }
 
-    //Cuando una persona (o eventualmente un bicho) se va de una puerta, lo restamos de esa puerta
-    public void SalirColision(tipoPuerta puerta)
+    /// <summary> Cuando lo perdemos por OSC lo destrackeamos y lo apagamos</summary>
+    void UnsetTrackeando() 
     {
-        switch (puerta)
-        {
-            case tipoPuerta.roja:
-                puertaRoja--;
-                break;
-            case tipoPuerta.azul:
-                puertaAzul--;
-                break;
-            case tipoPuerta.amarilla:
-                puertaAmarilla--;
-                break;
-            case tipoPuerta.verde:
-                puertaVerde--;
-                break;
-            default:
-                break;
-        }
+        trackeado = false;
+        transmitiendo = false;
     }
 
-    //Esta funcion se encarga de analizar cuanta gent ey eventualmente bichos estan en contacto con cada puerta y hacer subir la
-    //Barrita correspondiente. En caso de que corresponda, tambien llama a CambiarModo, que despues llama a CambiarColorTotem
-    void ManejarPuertas()
+
+    void EntroTotem(OscMessage m)
     {
-        if (puertaRoja > puertaAmarilla && puertaRoja > puertaAzul && puertaRoja > puertaVerde)
+        SetTrackeando();
+        float numWebcam = m.GetInt(3);
+        if(numWebcam == 1)
         {
-            if (barritaRoja < 100)
-            {
-                barritaRoja += puertaRoja;
-            }
-            else if (barritaRoja > 100)
-            {
-                barritaRoja = 100;
-            }
-            else if (barritaRoja == 100)
-            {
-                if (tipoEsteTotem == tipoTotem.explotacion)
-                {
-                    CambiarModo(modoTotemExplotacion.saqueador);
-                }
-                else if (tipoEsteTotem == tipoTotem.gobierno)
-                {
-                    CambiarModo(modoTotemGobierno.proglobalizacion);
-                }
-                else if (tipoEsteTotem == tipoTotem.medios)
-                {
-                    CambiarModo(modoTotemMedios.autoritario);
-                }
-            }
-        }
-        if (puertaAzul > puertaAmarilla && puertaAzul > puertaRoja && puertaAzul > puertaVerde)
+            webcamTrackeando = WEBCAM.WEBCAM1;
+        } else if(numWebcam == 2)
         {
-            if (barritaAzul < 100)
-            {
-                barritaAzul += puertaAzul;
-            }
-            else if (barritaAzul > 100)
-            {
-                barritaAzul = 100;
-            }
-            else if (barritaAzul == 100)
-            {
-                if (tipoEsteTotem == tipoTotem.explotacion)
-                {
-                    CambiarModo(modoTotemExplotacion.reinversor);
-                }
-                else if (tipoEsteTotem == tipoTotem.gobierno)
-                {
-                    CambiarModo(modoTotemGobierno.nacionalista);
-                }
-                else if (tipoEsteTotem == tipoTotem.medios)
-                {
-                    CambiarModo(modoTotemMedios.entretenimiento);
-                }
-            }
-        }
-        if (puertaAmarilla > puertaRoja && puertaAmarilla > puertaAzul && puertaAmarilla > puertaVerde)
-        {
-            if (barritaAmarilla < 100)
-            {
-                barritaAmarilla += puertaAmarilla;
-            }
-            else if (barritaAmarilla > 100)
-            {
-                barritaAmarilla = 100;
-            }
-            else if (barritaAmarilla == 100)
-            {
-                if (tipoEsteTotem == tipoTotem.explotacion)
-                {
-                    CambiarModo(modoTotemExplotacion.competencia);
-                }
-                else if (tipoEsteTotem == tipoTotem.gobierno)
-                {
-                    CambiarModo(modoTotemGobierno.esclavista);
-                }
-                else if (tipoEsteTotem == tipoTotem.medios)
-                {
-                    CambiarModo(modoTotemMedios.publicidad);
-                }
-            }
-        }
-        if (puertaVerde > puertaRoja && puertaVerde > puertaAzul && puertaVerde > puertaAmarilla)
-        {
-            if (barritaVerde < 100)
-            {
-                barritaVerde += puertaVerde;
-            }
-            else if (barritaVerde > 100)
-            {
-                barritaVerde = 100;
-            }
-            else if (barritaVerde == 100)
-            {
-                if (tipoEsteTotem == tipoTotem.explotacion)
-                {
-                    CambiarModo(modoTotemExplotacion.clasista);
-                }
-                else if (tipoEsteTotem == tipoTotem.gobierno)
-                {
-                    CambiarModo(modoTotemGobierno.concesivo);
-                }
-                else if (tipoEsteTotem == tipoTotem.medios)
-                {
-                    CambiarModo(modoTotemMedios.institucional);
-                }
-            }
+            webcamTrackeando = WEBCAM.WEBCAM2;
+        } else {
+            Debug.LogError("ERROR: El numero de kinect pasado por OSC no es invalido. Deberia ser 1 o 2. Se recibio: '" + numWebcam + "'");
         }
 
     }
 
-    //Aca solo cambiamos de color las ondas, el play o pause debiera manejarlo el apagar o prender transmision
-    void CambiarOndas(string color)
+    void SalioTotem(OscMessage m)
     {
-        switch (color)
+        UnsetTrackeando();
+    }
+
+    void ActualizarTotemOsc(OscMessage m)
+    {
+        float x = m.GetFloat(0);
+        float y = m.GetFloat(1);
+        if(webcamTrackeando == WEBCAM.WEBCAM1)
         {
-            case "rojas":
-                ondas.GetComponent<SpriteRenderer>().color = new Color(255, 0, 0); 
-                break;
-            case "azules":
-                ondas.GetComponent<SpriteRenderer>().color = new Color(0, 0, 255);
-                break;
-            case "verdes":
-                ondas.GetComponent<SpriteRenderer>().color = new Color(0, 255, 0);
-                break;
-            case "amarillas":
-                ondas.GetComponent<SpriteRenderer>().color = new Color(255, 255, 0);
-                break;
-            default:
-                Debug.LogWarning("LLamando a empezar ondas sin color");
-                break;
+            Debug.Log("X: " + x + " - " + minXin + " - " + maxXin + " - " + minX + " - " + maxX);
+            Debug.Log("Y: " + y + " - " + minYin + " - " + maxYin + " - " + minY1 + " - " + maxY1);
+            transform.localPosition = new Vector3(Utilidades.Map(x, minXin, maxXin, minX, maxX), Utilidades.Map(y, minYin, maxYin, minY1, maxY1), -0.1f);
+        } else if(webcamTrackeando == WEBCAM.WEBCAM2)
+        {
+            transform.localPosition = new Vector3(Utilidades.Map(x, minXin, maxXin, minX, maxX), Utilidades.Map(y, minYin, maxYin, minY2, maxY2), -0.1f);
         }
     }
 
-    //Aca solo cambiamos el clip de sonido del reproductor, el play o pause debiera manejarlo el apagar o prender transmision
-    void CambiarSonidos(AudioClip sonido)
+    /// <summary> Lo corremos al incio para obtener los bordes del mapa según cada cámara. </summary>
+    public void ActualizarCalibrado()
     {
-        son.clip = sonido;
+        minX = gV.minX;
+        maxX = gV.maxX;
+        minY1 = gV.minY1;
+        maxY1 = gV.maxY1;
+        minY2 = gV.minY2;
+        maxY2 = gV.maxY2;
+        Debug.Log("TOTEM " + gameObject.name + " actualizo su calibracion." + "minX: " + minX + " - maxX: " + maxX);
     }
+
 }

@@ -5,7 +5,7 @@ using UnityEngine;
 public class globalVariables : MonoBehaviour
 {
     //Calibracion de personas
-    public float minX1, maxX1, minY1, maxY1, minX2, maxX2, minY2, maxY2;
+    public float minX, maxX, minY1, maxY1, minY2, maxY2;
 
     public sonido son;
 
@@ -67,6 +67,8 @@ public class globalVariables : MonoBehaviour
 
     spawner sp;
 
+    public GameObject[] totems;
+
     // Start is called before the first frame update
     void Start() {
         nextActionTime = 0f;
@@ -94,7 +96,26 @@ public class globalVariables : MonoBehaviour
         relacionAlmacenPoblacion = 3;
 
         sp = GetComponent<spawner>();
-        son = GameObject.Find("Sonido").GetComponent<sonido>();
+        //son = GameObject.Find("Sonido").GetComponent<sonido>();
+
+        Debug.Log("Hay piso?");
+        if(piso != null){
+            Debug.Log("Hay piso :)");
+            minX = piso.transform.GetChild(0).transform.position.x;
+            maxX = piso.transform.GetChild(1).transform.position.x;
+            maxY1 = piso.transform.GetChild(2).transform.position.y;
+            minY1 = piso.transform.GetChild(3).transform.position.y;
+            maxY2 = piso.transform.GetChild(4).transform.position.y;
+            minY2 = piso.transform.GetChild(5   ).transform.position.y;
+
+        } else{
+            Debug.LogError("No hay un objeto piso asignado");
+        }
+
+        totems[0].GetComponent<totem>().ActualizarCalibrado();
+        totems[1].GetComponent<totem>().ActualizarCalibrado();
+        totems[2].GetComponent<totem>().ActualizarCalibrado();
+        totems[3].GetComponent<totem>().ActualizarCalibrado();
     }
 
     // Update is called once per frame
@@ -134,11 +155,11 @@ public class globalVariables : MonoBehaviour
                 {
                     s.GetComponent<vida>().setearSovietComunidad(null);
                 }
-                son.TocarTimbre();
+                //son.TocarTimbre();
             }
             if (horaActual == 0 && minutoActual == 0)
             {
-                son.TocarTimbre();
+                //son.TocarTimbre();
             }
         }
     }

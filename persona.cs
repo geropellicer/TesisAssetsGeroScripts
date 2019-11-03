@@ -53,7 +53,7 @@ public class persona : MonoBehaviour
     float maxYin = 1;
 
     [SerializeField]
-    float minX1, maxX1, minY1, maxY1, minX2, maxX2, minY2, maxY2;
+    float minX, maxX, minY1, maxY1, minY2, maxY2;
 
     //Para blobs
     float minXinBlob = -150;
@@ -173,7 +173,7 @@ public class persona : MonoBehaviour
             {
                 float x = m.GetFloat(1);
                 float y = m.GetFloat(2);
-                transform.localPosition = new Vector3(Utilidades.Map(x, minXin, maxXin, minX1, maxX1), Utilidades.Map(y, minYin, maxYin, minY1, maxY1), -0.1f);
+                transform.localPosition = new Vector3(Utilidades.Map(x, minXin, maxXin, minX, maxX), Utilidades.Map(y, minYin, maxYin, minY1, maxY1), -0.1f);
             }
     }
     public void RecibirDatosPersonaKin2(OscMessage m)
@@ -182,7 +182,7 @@ public class persona : MonoBehaviour
         {
             float x = m.GetFloat(1);
             float y = m.GetFloat(2);
-            transform.localPosition = new Vector3(Utilidades.Map(x, minXin, maxXin, minX2, maxX2), Utilidades.Map(y, minYin, maxYin, minY2, maxY2), -0.1f);
+            transform.localPosition = new Vector3(Utilidades.Map(x, minXin, maxXin, minX, maxX), Utilidades.Map(y, minYin, maxYin, minY2, maxY2), -0.1f);
         }
     }
 
@@ -241,12 +241,10 @@ public class persona : MonoBehaviour
 
     public void ActualizarCalibrado()
     {
-        minX1 = gV.minX1;
-        maxX1 = gV.maxX1;
+        minX = gV.minX;
+        maxX = gV.maxX;
         minY1 = gV.minY1;
         maxY1 = gV.maxY1;
-        minX2 = gV.minX2;
-        maxX2 = gV.maxX2;
         minY2 = gV.minY2;
         maxY2 = gV.maxY2;
         Debug.Log("Persona " + gameObject.name + " actualizo su calibracion.");

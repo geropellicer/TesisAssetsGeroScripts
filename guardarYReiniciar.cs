@@ -77,7 +77,7 @@ public class guardarYReiniciar : MonoBehaviour
     {
         //CargarCamara1();
         //CargarCamara2();
-        GameObject.Find("BotonSetear").GetComponent<UISetearCalibrado>().Cargar();
+        //GameObject.Find("BotonSetear").GetComponent<UISetearCalibrado>().Cargar();
     }
 
     void CargarCamara1()
