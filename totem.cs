@@ -23,7 +23,13 @@ public class totem : MonoBehaviour
 
     /// <summary> El tipo de totem que es este. En la escena debería haber uno de cada uno. 
     /// Se debe asignar desde la lectura por webcam del patron (predefinir que patron es que tipo) </summary>
-    public TIPOTOTEM tipoEsteTotem;
+    [SerializeField]
+    private TIPOTOTEM tipoEsteTotem;
+    /// <summary> Devovlemos publicamente para agentes externons cual de los 4 tipo de totems es este totem. </summary>
+    public TIPOTOTEM ObtenerTipoTotem()
+    {
+        return tipoEsteTotem;
+    }
 
     /// <summary> Gráfico de ondas para dar una idea de sobre que forma está incidiendo.
     /// TODO: ver si no se puede aplicar el waveform del audio como distorsión </summary>
@@ -47,6 +53,12 @@ public class totem : MonoBehaviour
     /// transmite osea que "funciona", incide en la realidad</summary>    
     [SerializeField]
     bool transmitiendo = false;
+    /// <summary> Obtenemos si está transmitiendo o no paraagentes externos Implica que está reconocido por el
+    /// sistema de trackeo y que está prendido desde el boton por el usuario o por los bichos. </summary>
+    public bool ObtenerEstaTransmitiendo()
+    {
+        return transmitiendo;
+    }
 
     float minXin = 0;
     float maxXin = 1;
@@ -107,6 +119,12 @@ public class totem : MonoBehaviour
         ondas = transform.GetChild(0).gameObject;
 
         ActualizarCalibrado();
+
+        transmitiendo = false;
+        trackeado = false;
+        if(!transmitiendo) {
+            ondas.SetActive(false);
+        }
     }
 
     // Update is called once per frame
@@ -123,10 +141,10 @@ public class totem : MonoBehaviour
         if(trackeado)
         {
             transmitiendo = true;
-            im.enabled = true;
             //Prender audio
             //Cambiar modo si es necesario
             //Emitir señales visuales de transmision
+            ondas.SetActive(true);
         }
     }
 
@@ -138,18 +156,21 @@ public class totem : MonoBehaviour
         //Apagar audio
         //Cambiar modo si es necesario
         //Dejar de emitir señales visuales de transmision
+        ondas.SetActive(false);
     }
 
     /// <summary> Cuando el OSC detecta la imagen de este totem lo ponemos como trackeado </summary>
     void SetTrackeando()
     {
         trackeado = true;
+        im.enabled = true;
     }
 
     /// <summary> Cuando lo perdemos por OSC lo destrackeamos y lo apagamos</summary>
     void UnsetTrackeando() 
     {
         trackeado = false;
+        im.enabled = true;
         transmitiendo = false;
     }
 
@@ -230,6 +251,7 @@ public class totem : MonoBehaviour
     public void ActualizarCalibrado()
     {
         minX = gV.minX;
+        Debug.Log("Desde totem: minx local: " + minX + " - gv.minX: " + gV.minX);
         maxX = gV.maxX;
         minY1 = gV.minY1;
         maxY1 = gV.maxY1;

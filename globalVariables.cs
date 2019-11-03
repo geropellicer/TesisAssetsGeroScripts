@@ -102,6 +102,7 @@ public class globalVariables : MonoBehaviour
         if(piso != null){
             Debug.Log("Hay piso :)");
             minX = piso.transform.GetChild(0).transform.position.x;
+            Debug.Log("DESDE GV: " + minX);
             maxX = piso.transform.GetChild(1).transform.position.x;
             maxY1 = piso.transform.GetChild(2).transform.position.y;
             minY1 = piso.transform.GetChild(3).transform.position.y;

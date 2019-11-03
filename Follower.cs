@@ -108,6 +108,39 @@ public class Follower : MonoBehaviour {
     /// <summary> TODO: adicionalmente también deberían aumentar por efecto contagio de otros bichos de la misma persona. </summary>
     private int efectoPublicoEstatal, efectoPublicoMilitar, efectoPrivadoComercial, efectoPrivadoEntretenimiento;
 
+    /// <summary> Si la distancia de un efecto a otro supera la del umbral, empieza a sumar puntos esa emocion. </summary>
+    int umbralEfectoEmocion = 100;
+
+    [SerializeField]
+    /// <summary> Acá almacenamos con cuanta intensidad se siente una emoción. Solo deberíamos tener en mayor a 0 </summary>
+    /// <summary> la emoción que actualmente está activa. La diferencia con el efecto es que el efecto es según </summary>
+    /// <summary> cuanto afecta cada antena solamente, no se reinicia sino que se acumula a lo largo del tiempo. </summary>
+    /// <summary> El nivel de emocion en cambio empieza de 1 apenas se transiciona a la emocion y va aumentando según factores.</summary>
+    private int nivelEmocionActual;
+
+    /// <summary> Si el nivel de una emocion es mayor a este umbral, puede empezar a contagiar al resto si entra en contacto.</summary>
+    private int umbralContagioEmocion = 100;
+
+    /// <summary> Las 6 distintas emociones (y la 7ma NADA) que pueden sentir (una por vez por ahora) </summary>
+    /// <summary> Si en el futuro queremos que sean combinables, deberíamos tener booleanos separados. </summary>
+    public enum EMOCION {
+        NADA,
+        AMORALLIDER,
+        HACERGUERRA,
+        BOLUDEAR,
+        INDIVIDUALISTA,
+        REBELARSE,
+        ESCAPARSE
+    }
+    /// <summary> La emoción que siente actualmente. Adicionalmente tenemos la intensidad en las variables "nivelEmocion". </summary>
+    [SerializeField]
+    private EMOCION emocionActual;
+    /// <summary> Devolvemos la emocion actual a agentes externos. </summary> 
+    public EMOCION ObtenerEmocionActual()
+    {
+        return emocionActual;
+    }
+
     void OnEnable () {
         sR = GetComponent<SpriteRenderer>();
         aiP = GetComponent<AIPath>();
@@ -126,6 +159,8 @@ public class Follower : MonoBehaviour {
 
         tiempoTotalRumiar = Random.Range(200,450);
         tiempoTotalTrabajar = Random.Range(200,450);
+
+        emocionActual = EMOCION.NADA;
     }
 
     /// <summary>Todos los frames evaluamos que hacer dependiendo el estado y los eventos</summary>
@@ -135,6 +170,11 @@ public class Follower : MonoBehaviour {
     }
 
     /// <summary>Todos los frames evaluamos como se siente dependiendo de como le afecten las antenas</summary>
+    /// <summary>Para todos los casos evaluamos: 1) que el efecto que tiene un discurso determinado sea mayor a </summary>
+    /// <summary>todods los demás y 2) que la distancia al segundo efecto sea mayor a un umbral de efecto.</summary>
+    /// <summary>Esto nos permite A) solo hacer pasos a emociones cuyo discursos nos influyen mas que todos los otros y</summary>
+    /// <summary>B) solo cambiar de emocion cuando hay mucha diferencia de incidencia de discursos. Por lo tanto discursos</summary>
+    /// <summary>muy balanceados afectando a un sujeto van a tender a evitar el cambio de emociones.</summary>
     void DecidirSentimientos()
     {
         // PUBLICO ESTATAL
@@ -142,7 +182,16 @@ public class Follower : MonoBehaviour {
             efectoPublicoEstatal > efectoPrivadoEntretenimiento &&
             efectoPublicoEstatal > efectoPublicoMilitar)
         {
-
+            if(efectoPublicoEstatal - efectoPrivadoComercial > umbralEfectoEmocion &&
+               efectoPublicoEstatal - efectoPrivadoEntretenimiento > umbralEfectoEmocion && 
+               efectoPublicoEstatal - efectoPublicoMilitar > umbralEfectoEmocion )
+            {
+                if(emocionActual != EMOCION.AMORALLIDER)
+                {
+                    CambiarEmocion(EMOCION.AMORALLIDER, 0);
+                }
+                nivelEmocionActual++;
+            }
         }
 
         // PUBLICO MILITAR
@@ -150,7 +199,16 @@ public class Follower : MonoBehaviour {
             efectoPublicoMilitar > efectoPrivadoEntretenimiento &&
             efectoPublicoMilitar > efectoPublicoEstatal)
         {
-
+            if(efectoPublicoMilitar - efectoPrivadoComercial > umbralEfectoEmocion &&
+               efectoPublicoMilitar - efectoPrivadoEntretenimiento > umbralEfectoEmocion && 
+               efectoPublicoMilitar - efectoPublicoEstatal > umbralEfectoEmocion )
+            {
+                if(emocionActual != EMOCION.HACERGUERRA)
+                {
+                    CambiarEmocion(EMOCION.HACERGUERRA, 0);
+                }
+                nivelEmocionActual++;
+            }
         }
 
         // PRIVADO ENTRETENIMIENTO
@@ -158,7 +216,16 @@ public class Follower : MonoBehaviour {
             efectoPrivadoEntretenimiento > efectoPublicoMilitar &&
             efectoPrivadoEntretenimiento > efectoPublicoEstatal)
         {
-
+            if(efectoPrivadoEntretenimiento - efectoPrivadoComercial > umbralEfectoEmocion &&
+               efectoPrivadoEntretenimiento - efectoPublicoMilitar > umbralEfectoEmocion && 
+               efectoPrivadoEntretenimiento - efectoPublicoEstatal > umbralEfectoEmocion )
+            {
+                if(emocionActual != EMOCION.BOLUDEAR)
+                {
+                    CambiarEmocion(EMOCION.BOLUDEAR, 0);
+                }
+                nivelEmocionActual++;
+            }
         }
 
         // PRIVADO COMERCIAL
@@ -166,7 +233,16 @@ public class Follower : MonoBehaviour {
             efectoPrivadoComercial > efectoPublicoMilitar &&
             efectoPrivadoComercial > efectoPublicoEstatal)
         {
-
+            if(efectoPrivadoComercial - efectoPublicoEstatal > umbralEfectoEmocion &&
+               efectoPrivadoComercial - efectoPrivadoEntretenimiento > umbralEfectoEmocion && 
+               efectoPrivadoComercial - efectoPublicoMilitar > umbralEfectoEmocion )
+            {
+                if(emocionActual != EMOCION.INDIVIDUALISTA)
+                {
+                    CambiarEmocion(EMOCION.INDIVIDUALISTA, 0);
+                }
+                nivelEmocionActual++;
+            }
         }
 
     }
@@ -208,32 +284,6 @@ public class Follower : MonoBehaviour {
         }  
     }
 
-    /// <summary>Siempre que pasamos de un estado al otro no deberiamos asignar la variable directamente, si no pasar ppor aca
-    /// para hacer todsos los chequeos en un solo lugar y si fuera necesario implementar hooks</summary>
-    void CambiarEstado(Estado nuevoEstado) {
-        if(estado != nuevoEstado) {
-            if(nuevoEstado == Estado.TRABAJANDO){
-                subEstadoActualTrabajando = TRABAJANDO.buscandoTrabajo;
-                aiP.canSearch = false;
-                //gds.ClearDestination();
-            }
-
-            if(nuevoEstado == Estado.IDLE){
-                subEstadoActualIdle = IDLE.buscandoLugar;
-            }
-
-            if(nuevoEstado == Estado.SIGUIENDO){
-                an.SetTrigger("caminando");
-                aiP.canSearch = true;
-                gds.SetDestination(persona);
-            }
-            
-            Debug.Log("Se efectuo un cambio de estado: de " + estado + " a " + nuevoEstado);
-            estado = nuevoEstado;
-        }
-    }
-
-
     /// <summary>Cuando entramos en un Trigger debemos manejar los cambios. En principio las reglas debieran ser:
     /// Si es una persona (a traves del Seguido), lo manejamos desde aca porque el seguido no tiene OnTriggerEnter
     /// Si es con otro sujeto: de la misma persona, ignoramos. De otra persona, maneja quien tiene persona con mas seguidores.</summary>
@@ -253,10 +303,36 @@ public class Follower : MonoBehaviour {
                 if(other.gameObject.GetComponent<Follower>().persona == null){
                     ManejarColisionesConSujetoHuerfano(other);
                 } else if(persona.GetComponent<Seguido>().GetNumSeguidores() > other.gameObject.GetComponent<Follower>().persona.GetComponent<Seguido>().GetNumSeguidores()){
+                    // Si el otro sujeto tiene persona y tiene menos seguidores que nosotros, manejamos aca
                     ManejarColisionesConSujeto(other);
+                }
+                if(GameObject.Equals(persona,  other.gameObject.GetComponent<Follower>().persona))
+                {
+                    // Si las dos personas son la misma, estamos en presencia de un seguidor de nuestro propio grupo.
+                    // Solo actuamos en caso de que haya que contagiar: si sentimos mas emocion que el umbral y si el otro no tiene nuestra emocion
+                    // TODO: deberiamos agregar los niveles de emocion de rebelarse y huir
+                    if(nivelEmocionActual > umbralContagioEmocion)
+                    {
+                        if(emocionActual != other.gameObject.GetComponent<Follower>().ObtenerEmocionActual())
+                        {
+                            ContagiarEmocion(other.gameObject, emocionActual);
+                        }
+                    }
                 }
             }
         }
+    }
+
+    void ContagiarEmocion(GameObject sujeto, EMOCION emocionAContagiar)
+    {
+        sujeto.GetComponent<Follower>().RecibirContagio(emocionAContagiar, nivelEmocionActual);
+        Debug.Log("CONTAGIANDO a " + sujeto.name + " con la emocion " + emocionAContagiar);
+    }
+
+    public void RecibirContagio(EMOCION emocionContagiada, int nivelEmocion)
+    {
+        CambiarEmocion(emocionContagiada, nivelEmocion - 10);
+        Debug.Log("Recibiendo contagio de " + emocionContagiada + " con nivel de contagio " + nivelEmocion);
     }
 
     /// <summary>Cuando tocamos un trigger y es una persona y nosotros no tenemos persona 
@@ -357,7 +433,7 @@ public class Follower : MonoBehaviour {
     }
 
 
-    // Trabajando
+    // IDLE
     ///////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////
@@ -436,6 +512,44 @@ public class Follower : MonoBehaviour {
         return Random.Range(velMin, velMax);
     }
 
+    /// <summary>Siempre que pasamos de un estado al otro no deberiamos asignar la variable directamente, si no pasar ppor aca
+    /// para hacer todsos los chequeos en un solo lugar y si fuera necesario implementar hooks</summary>
+    void CambiarEstado(Estado nuevoEstado) {
+        if(estado != nuevoEstado) {
+            if(nuevoEstado == Estado.TRABAJANDO){
+                subEstadoActualTrabajando = TRABAJANDO.buscandoTrabajo;
+                aiP.canSearch = false;
+                //gds.ClearDestination();
+            }
+
+            if(nuevoEstado == Estado.IDLE){
+                subEstadoActualIdle = IDLE.buscandoLugar;
+            }
+
+            if(nuevoEstado == Estado.SIGUIENDO){
+                an.SetTrigger("caminando");
+                aiP.canSearch = true;
+                gds.SetDestination(persona);
+            }
+            
+            Debug.Log("Se efectuo un cambio de estado: de " + estado + " a " + nuevoEstado);
+            estado = nuevoEstado;
+        }
+    }
+
+    /// <summary> Para cambiar cualquier emocion no se debe asignar directamente, sino que debriamos pasar por aca </summary>
+    /// <summary> por tema checkeos y hooks. El segundo parametro siempre debe ser 0 en un cambio normal, solo se usa </summary>
+    /// <summary> en caso de que sea un cambio por contagio, en el que se pasa cuan emocionado está el contagiante - 10 </summary> 
+    void CambiarEmocion(EMOCION nuevaEmocion, int nivelNuevaEmocion) {
+        if(emocionActual != nuevaEmocion)
+        {
+                nivelEmocionActual = nivelNuevaEmocion;
+                emocionActual = nuevaEmocion;
+        } else {
+            Debug.LogWarning("Atencion: llamando a cambiar emocion entre dos emociones iguales: Actual: " + emocionActual + " Nueva: " + nuevaEmocion);
+        }
+    }
+
 
     // Accedidas desde ONDAS
     ///////////////////////////////////////////////////////////////////////////
@@ -443,7 +557,7 @@ public class Follower : MonoBehaviour {
     ///////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////
 
-    void AfectarPorAntena(TIPOTOTEM totem) 
+    public void AfectarPorAntena(TIPOTOTEM totem) 
     {
         switch (totem)
         {
