@@ -4,9 +4,13 @@ using UnityEngine;
 
 public enum TIPOTOTEM
 {
+    /// <summary> COLOR: AZUL </summary>
     PUBLICOESTATAL,
+    /// <summary> COLOR: VERDE </summary>
     PUBLICOMILITAR,
+    /// <summary> COLOR: AMARILLO </summary>
     PRIVADOCOMERCIAL,
+    /// <summary> COLOR: MAGENTA </summary>
     PRIVADOENTRETENIMIENTO
 }
 

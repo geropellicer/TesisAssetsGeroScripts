@@ -43,6 +43,25 @@ public class Follower : MonoBehaviour {
     private SpriteRenderer sRZona;
 
 
+    /// <summary> El HUE del color del bicho basado en la emocion que siente. </summary>
+    /// <summary> PUBLICOESTATAL:   219, </summary>
+    /// <summary> PUBLICOMILITAR:   141, </summary>
+    /// <summary> PRIVADOCOMERCIAL:   63, </summary>
+    /// <summary> PRIVADOENTRETENIMIENTO:   310, </summary>
+    /// <summary> REBELION:   350, </summary>
+    /// <summary> IRSE:   0, </summary>
+    /// <summary> NADA:   0, </summary>
+    float hueColorEmocion;
+
+    /// <summary> El SATURATION del color del bicho basado en la emocion que siente. </summary>
+    /// <summary> Aumento de acuerdo a un mapping entre ciertos limites y la intensidad de la emocion. </summary>
+    float saturationColorEmocion;
+
+    /// <summary> El BRIGHTNESS del color del bicho basado en la emocino que siente. </summary>
+    /// <summary> 50 para las 4 emociones de antenas y para la de rebelion. </summary>
+    /// <summary> 100 para nada o neutral. </summary>
+    float brightnessColorEmocion;
+
     /// <summary>Devolvemos si la persona que seguimos esta parada o no.</summary>
     bool PersonaEstaParada(){
         return persona.GetComponent<Seguido>().EstaParado();
@@ -174,13 +193,16 @@ public class Follower : MonoBehaviour {
         tiempoTotalRumiar = Random.Range(200,450);
         tiempoTotalTrabajar = Random.Range(200,450);
 
-        emocionActual = EMOCION.NADA;
+        CambiarEmocion(EMOCION.NADA, 0);
+        // Necesario para que al iniciaizar sean blancos
+        brightnessColorEmocion = 100;
     }
 
     /// <summary>Todos los frames evaluamos que hacer dependiendo el estado y los eventos</summary>
     void Update () {
         DecidirSentimientos();
         DecidirQueHacer();
+        AsignarColorBicho();
     }
 
     /// <summary>Todos los frames evaluamos como se siente dependiendo de como le afecten las antenas</summary>
@@ -558,11 +580,54 @@ public class Follower : MonoBehaviour {
     void CambiarEmocion(EMOCION nuevaEmocion, int nivelNuevaEmocion) {
         if(emocionActual != nuevaEmocion)
         {
+            if(nuevaEmocion == EMOCION.AMORALLIDER)
+            {
+                hueColorEmocion = 219;
+                brightnessColorEmocion = 75;
+            }
+            if(nuevaEmocion == EMOCION.HACERGUERRA)
+            {
+                hueColorEmocion = 141;
+                brightnessColorEmocion = 75;
+            }
+            if(nuevaEmocion == EMOCION.BOLUDEAR)
+            {
+                hueColorEmocion = 310;
+                brightnessColorEmocion = 75;
+            }
+            if(nuevaEmocion == EMOCION.INDIVIDUALISTA)
+            {
+                hueColorEmocion = 63;
+                brightnessColorEmocion = 75;
+            }
+            if(nuevaEmocion == EMOCION.NADA)
+            {
+                hueColorEmocion = 0;
+                brightnessColorEmocion = 100;
+            }
                 nivelEmocionActual = nivelNuevaEmocion;
                 emocionActual = nuevaEmocion;
         } else {
             Debug.LogWarning("Atencion: llamando a cambiar emocion entre dos emociones iguales: Actual: " + emocionActual + " Nueva: " + nuevaEmocion);
         }
+    }
+
+    void AsignarColorBicho()
+    {
+        float h = Utilidades.Map(hueColorEmocion, 0, 360, 0, 1, true);
+        // Para la saturacion: entramos con el nivel de emocion conmo variable a mapear. A mayor intensidad,
+        // mayor saturacion del color. Mapeamos entre un umbral minimo (100 como prueba) y un umbral maximo donde ya se muestra
+        // el maximo posible del color
+        float s = 0;
+        if(emocionActual != EMOCION.NADA)
+        {
+            s = Utilidades.Map(nivelEmocionActual, 100, 3500, 0, 1, true);
+        } else {
+            s = 0;
+        }
+        
+        float v = Utilidades.Map(brightnessColorEmocion, 0, 100, 0, 1, true);
+        sR.color = Color.HSVToRGB(h,s,v);
     }
 
 
