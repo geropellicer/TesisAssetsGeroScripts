@@ -39,41 +39,74 @@ public class Follower : MonoBehaviour {
     }
 
     [SerializeField]
-    /// <summary> Velocidad de desplazamiento mínima para cuando camina
+    /// <summary> Velocidad de desplazamiento mínima para cuando camina</summary>
     private float velMin;
 
     [SerializeField]
-    /// <summary> Velocidad de desplazamiento mínima para cuando camina
+    /// <summary> Velocidad de desplazamiento mínima para cuando camina</summary>
     private float velMax;
 
+    /// <summary> Referencia al globalManager para sacar las gV y otras utilidades </summary>
     GameObject globalManager;   
+    
+    /// <summary> Referencia a las variables globales</summary>
     private globalVariables gV; 
+
+    /// <summary> Referencia al AIPath de A* para setear velocidades</summary>
     private AIPath aiP;
+
+    /// <summary> Referencia al animator para cambair el estad de los graficos</summary>
     private Animator an;
+    
+    /// <summary> Referencia al Gero Destination Setter script para setear el destino del agente AI de A*</summary>
     private GeroDestinationSetter gds;
 
+    /// <summary> Lo usamos para alamacenar un punto en el espacio al que va a minar</summary>
     Vector3 posLugarDeTrabajo;
+    
+    /// <summary> Cuanto lleva trabajado en este ciclo particular de trabajo
+    /// (se increementa cadsa frame que esta trabajando en el lugar correcto)</summary>
     int tiempoActualTrabajar = 0;
+
+    /// <summary> El total que tiene que trabajar en este ciclo para conseguir el producto</summary>
     int tiempoTotalTrabajar;
+
+    /// <summary> Los tres subestados posibles para el estado TRABAJANDO</summary>
+    /// <summary> Buscando Trabajo: buscamos un punto cercano en el espacio</summary>
+    /// <summary> Caminando al trabajo: Vamos (seteado por AIPath, acá no hacemos mucho)</summary>
+    /// <summary> Trabajando: minando literalmente hasta que obtiene el producto.</summary>
     enum TRABAJANDO {
         buscandoTrabajo,
         caminandoAlTrabajo,
         trabajando,
     }
+    /// <summary> Almacenamos el subestado actual en caso de que estemos en el estado TRABAJANDO</summary>
      [SerializeField]
      private TRABAJANDO subEstadoActualTrabajando;
 
+    /// <summary> Contador para el tiempo que llevamos quietos en IDLE, se suma cada frame que esté quieto</summary>
     int tiempoActualRumiar = 0;
+    /// <summary> Valor al que tenemos que llegar con el tiempoActualRumiar para cosniderar e ciclo terminado</summary>
     int tiempoTotalRumiar;
+    /// <summary> Los tres subestados posibles para el estado IDLE</summary>
+    /// <summary> Buscando Lugar: buscamos un punto cercano en el espacio</summary>
+    /// <summary> Caminando: Vamos (seteado por AIPath, acá no hacemos mucho)</summary>
+    /// <summary> Rumiando: esperando sin hacer nada literalmente hasta que termine el tiempo rumiar.</summary>
     enum IDLE
     {
         buscandoLugar,
         caminando,
         rumiando
     }
+    /// <summary> Almacenamos el subestado actual en caso de que estemos en el estado IDLE</summary>
     [SerializeField]
     private IDLE subEstadoActualIdle;
 
+    [SerializeField]
+    /// <summary> Guardamos la cantidad de incidencia que tiene una antena particular. </summary>
+    /// <summary> Cada vez que una onda de un totem particular le pega a un bicho, incrementa el efecto de esa antena.</summary>
+    /// <summary> TODO: adicionalmente también deberían aumentar por efecto contagio de otros bichos de la misma persona. </summary>
+    private int efectoPublicoEstatal, efectoPublicoMilitar, efectoPrivadoComercial, efectoPrivadoEntretenimiento;
 
     void OnEnable () {
         sR = GetComponent<SpriteRenderer>();
@@ -97,10 +130,48 @@ public class Follower : MonoBehaviour {
 
     /// <summary>Todos los frames evaluamos que hacer dependiendo el estado y los eventos</summary>
     void Update () {
+        DecidirSentimientos();
         DecidirQueHacer();
     }
 
-    /// <summary>Todos los frames evaluamos que hacer dependiendo el estado y los eventos</summary>
+    /// <summary>Todos los frames evaluamos como se siente dependiendo de como le afecten las antenas</summary>
+    void DecidirSentimientos()
+    {
+        // PUBLICO ESTATAL
+        if(efectoPublicoEstatal > efectoPrivadoComercial &&
+            efectoPublicoEstatal > efectoPrivadoEntretenimiento &&
+            efectoPublicoEstatal > efectoPublicoMilitar)
+        {
+
+        }
+
+        // PUBLICO MILITAR
+        if(efectoPublicoMilitar > efectoPrivadoComercial &&
+            efectoPublicoMilitar > efectoPrivadoEntretenimiento &&
+            efectoPublicoMilitar > efectoPublicoEstatal)
+        {
+
+        }
+
+        // PRIVADO ENTRETENIMIENTO
+        if(efectoPrivadoEntretenimiento > efectoPrivadoComercial &&
+            efectoPrivadoEntretenimiento > efectoPublicoMilitar &&
+            efectoPrivadoEntretenimiento > efectoPublicoEstatal)
+        {
+
+        }
+
+        // PRIVADO COMERCIAL
+        if(efectoPrivadoComercial > efectoPrivadoEntretenimiento &&
+            efectoPrivadoComercial > efectoPublicoMilitar &&
+            efectoPrivadoComercial > efectoPublicoEstatal)
+        {
+
+        }
+
+    }
+
+    
     void DecidirQueHacer() {
         if(estado == Estado.IDLE) {
             // Lo unico que lo puede sacar de este estado seria que lo toque un usuario
@@ -328,6 +399,15 @@ public class Follower : MonoBehaviour {
         }      
     }
 
+
+
+
+    // Utilidades
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+
     void SetTiempoRumiar()
     {
         tiempoActualRumiar = 0;
@@ -354,6 +434,35 @@ public class Follower : MonoBehaviour {
     float SetVelocidadRandom()
     {
         return Random.Range(velMin, velMax);
+    }
+
+
+    // Accedidas desde ONDAS
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+
+    void AfectarPorAntena(TIPOTOTEM totem) 
+    {
+        switch (totem)
+        {
+            case TIPOTOTEM.PUBLICOESTATAL:
+                efectoPublicoEstatal++;
+                break;
+            case TIPOTOTEM.PUBLICOMILITAR:
+                efectoPublicoMilitar++;
+                break;
+            case TIPOTOTEM.PRIVADOENTRETENIMIENTO:
+                efectoPrivadoEntretenimiento++;
+                break;
+            case TIPOTOTEM.PRIVADOCOMERCIAL:
+                efectoPrivadoComercial++;
+                break;
+            default:
+                Debug.Log("ERROR: Se envio un 'AfectarAntena()' sin tipo de totem");
+                break;
+        }
     }
 }
 

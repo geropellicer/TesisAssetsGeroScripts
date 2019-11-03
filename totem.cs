@@ -73,21 +73,29 @@ public class totem : MonoBehaviour
             osc.SetAddressHandler("/Totem1/Entered/", EntroTotem);
             osc.SetAddressHandler("/Totem1/Leave/", SalioTotem);
             osc.SetAddressHandler("/Totem1/Update/", ActualizarTotemOsc);
+            osc.SetAddressHandler("/Totem1/Encender/", EncenderTotem);
+            osc.SetAddressHandler("/Totem1/Apagar/", ApagarTotem);
         } else if(tipoEsteTotem == TIPOTOTEM.PRIVADOENTRETENIMIENTO)
         {
             osc.SetAddressHandler("/Totem2/Entered/", EntroTotem);
             osc.SetAddressHandler("/Totem2/Leave/", SalioTotem);
             osc.SetAddressHandler("/Totem2/Update/", ActualizarTotemOsc);
+            osc.SetAddressHandler("/Totem2/Encender/", EncenderTotem);
+            osc.SetAddressHandler("/Totem2/Apagar/", ApagarTotem);
         } else if(tipoEsteTotem == TIPOTOTEM.PUBLICOESTATAL)
         {
             osc.SetAddressHandler("/Totem3/Entered/", EntroTotem);
             osc.SetAddressHandler("/Totem3/Leave/", SalioTotem);
             osc.SetAddressHandler("/Totem3/Update/", ActualizarTotemOsc);
+            osc.SetAddressHandler("/Totem3/Encender/", EncenderTotem);
+            osc.SetAddressHandler("/Totem3/Apagar/", ApagarTotem);
         } else if(tipoEsteTotem == TIPOTOTEM.PUBLICOMILITAR)
         {
             osc.SetAddressHandler("/Totem4/Entered/", EntroTotem);
             osc.SetAddressHandler("/Totem4/Leave/", SalioTotem);
             osc.SetAddressHandler("/Totem4/Update/", ActualizarTotemOsc);
+            osc.SetAddressHandler("/Totem4/Encender/", EncenderTotem);
+            osc.SetAddressHandler("/Totem4/Apagar/", ApagarTotem);
         }
 
         gV = GameObject.Find("GlobalManager").GetComponent<globalVariables>();
@@ -110,11 +118,12 @@ public class totem : MonoBehaviour
 
     /// <summary> Solo si esta en el espacio y detectado, con este metodo prendemos el totem
     /// para que comience a transmitir (incidir en la realidad) </summary>
-    void EmpezarATransmitir(int numWebcam)
+    void EmpezarATransmitir()
     {
         if(trackeado)
         {
             transmitiendo = true;
+            im.enabled = true;
             //Prender audio
             //Cambiar modo si es necesario
             //Emitir señales visuales de transmision
@@ -125,6 +134,7 @@ public class totem : MonoBehaviour
     void TerminarDeTransmitir()
     {
         transmitiendo = false;
+        im.enabled = false;
         //Apagar audio
         //Cambiar modo si es necesario
         //Dejar de emitir señales visuales de transmision
@@ -180,6 +190,42 @@ public class totem : MonoBehaviour
         }
     }
 
+    void EncenderTotem(OscMessage m)
+    {
+        EmpezarATransmitir();
+        // Encender la luz del boton
+        // TODO: Forward port and IP
+        OscMessage message = new OscMessage();
+
+        message.address = "/EncenderTotem/Luz";
+        message.values.Add(1);
+        osc.Send(message);
+        
+        // Apagar el parlante
+        OscMessage message2 = new OscMessage();
+
+        message2.address = "/EncenderTotem/Sonido";
+        message2.values.Add(1);
+        osc.Send(message2);
+    }
+    void ApagarTotem(OscMessage m)
+    {
+        TerminarDeTransmitir();
+        // Apagar la luz del boton
+        // TODO: Forward port and IP
+        OscMessage message = new OscMessage();
+
+        message.address = "/ApagarTotem/Luz";
+        message.values.Add(0);
+        osc.Send(message);
+        
+        // Apagar el parlante
+        OscMessage message2 = new OscMessage();
+
+        message2.address = "/ApagarTotem/Sonido";
+        message2.values.Add(0);
+        osc.Send(message2);
+    }
     /// <summary> Lo corremos al incio para obtener los bordes del mapa según cada cámara. </summary>
     public void ActualizarCalibrado()
     {

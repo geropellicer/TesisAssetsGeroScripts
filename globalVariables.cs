@@ -153,7 +153,7 @@ public class globalVariables : MonoBehaviour
             {
                 foreach (GameObject s in GameObject.FindGameObjectsWithTag("sujeto"))
                 {
-                    s.GetComponent<vida>().setearSovietComunidad(null);
+                    //s.GetComponent<vida>().setearSovietComunidad(null);
                 }
                 //son.TocarTimbre();
             }
