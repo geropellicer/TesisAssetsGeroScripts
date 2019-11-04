@@ -47,6 +47,7 @@ public class Seguido : MonoBehaviour {
     }
 
     /// <summary> Listado privado de comidas que va expropiando. De afuera se accede por los metodos de abajo </summary>
+    [SerializeField]
     private List<GameObject> comidas;
 
     /// <summary> Devuelve una comida no nula al azar </summary>
@@ -65,6 +66,19 @@ public class Seguido : MonoBehaviour {
         comidas.AddRange(comidasNuevas);
     }
 
+    public void AgregarComidaDeSeguidor(GameObject comidaNueva)
+    {
+        comidas.Add(comidaNueva);
+    }
+
+    [SerializeField]
+    GameObject prefabManchaPiso;
+    float nextActionTime;
+    float intervalo;
+    float nextActionTimeComer;
+    float intervaloComer;
+
+
 
     void Awake()
     {
@@ -79,10 +93,34 @@ public class Seguido : MonoBehaviour {
         }
 
         comidas = new List<GameObject>();
+
+        nextActionTime = Time.time + Random.Range(0f,1f);
+        intervalo = Random.Range(1f, 2f);
+
+        nextActionTimeComer = Time.time + Random.Range(2f,4f);
+        intervaloComer= Random.Range(6, 12);
     }
 
     private void Update() {
         DecidirSiEstaParado();
+
+        if (Time.time > nextActionTime)
+        {
+            nextActionTime = Time.time + intervalo;
+            GameObject zona = Instantiate(prefabManchaPiso, transform.position, Quaternion.Euler(new Vector3(0, 0, Random.Range(0,360))));
+            zona.transform.localScale = new Vector3(12.5f,12.5f,12.5f);
+            zona.GetComponent<SpriteRenderer>().color = colorSprite;
+        }
+        if (Time.time > nextActionTimeComer)
+        {
+            nextActionTimeComer = Time.time + intervaloComer;
+            if(comidas.Count > 0)
+            {
+                GameObject comidaComer = comidas[0];
+                comidas.Remove(comidaComer);
+                Destroy(comidaComer);
+            }
+        }
     }
 
     /// <summary> Cuando un follower toca a otro de una persona distinta, si su persona es mayor, solicita empezar a seguirlo.

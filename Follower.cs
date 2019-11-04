@@ -28,16 +28,16 @@ public class Follower : MonoBehaviour {
     [SerializeField]
     private Estado estado;
 
-    /// <summary>Referencia al sprite renderer para cambiar el color del bicho según lo que sienta.</summary>    
+    /// <summary>Referencia al sprite renderer para cambiar el color del bicho según a que persona sigue.</summary>    
     private SpriteRenderer sR;
 
-    /// <summary>Guardamos el color que vamos a aplicarle al sR del mismo bicho (EMOCION).</summary>    
+    /// <summary>Guardamos el color que vamos a aplicarle al sR del mismo bicho (PERTENENCIA A UNA PERSONA).</summary>    
     private Color colorSpriteBicho;
 
-     /// <summary>Guardamos el color que vamos a aplicarle al sR de la zona (PERTENCIA A PERSONA).</summary>    
+     /// <summary>Guardamos el color que vamos a aplicarle al sR de la zona (SEGUN LA EMOCION QUE SIENTA EL BICHO).</summary>    
     private Color colorSpriteZona;
 
-    /// <summary> El fondo del bicho que se pinta del color de la persona que lo posee </summary>
+    /// <summary> El fondo del bicho que se pinta del color de la emocion del bicho </summary>
     private GameObject zona;
 
     /// <summary> El sprite renderer del fondo del bicho </summary>
@@ -95,8 +95,10 @@ public class Follower : MonoBehaviour {
     
     /// <summary> Cuanto lleva trabajado en este ciclo particular de trabajo
     /// (se increementa cadsa frame que esta trabajando en el lugar correcto)</summary>
+    [SerializeField]
     int tiempoActualTrabajar = 0;
 
+    [SerializeField]
     /// <summary> El total que tiene que trabajar en este ciclo para conseguir el producto</summary>
     int tiempoTotalTrabajar;
 
@@ -114,8 +116,10 @@ public class Follower : MonoBehaviour {
      private TRABAJANDO subEstadoActualTrabajando;
 
     /// <summary> Contador para el tiempo que llevamos quietos en IDLE, se suma cada frame que esté quieto</summary>
+    [SerializeField]
     int tiempoActualRumiar = 0;
     /// <summary> Valor al que tenemos que llegar con el tiempoActualRumiar para cosniderar e ciclo terminado</summary>
+    [SerializeField]
     int tiempoTotalRumiar;
     /// <summary> Los tres subestados posibles para el estado IDLE</summary>
     /// <summary> Buscando Lugar: buscamos un punto cercano en el espacio</summary>
@@ -228,7 +232,7 @@ public class Follower : MonoBehaviour {
         subEstadoActualIdle = IDLE.buscandoLugar;
 
         velMin = Random.Range(0.33f, 2);
-        velMax = Random.Range(5, 10);
+        velMax = Random.Range(10, 30);
 
         tiempoTotalRumiar = Random.Range(200,450);
         tiempoTotalTrabajar = Random.Range(200,450);
@@ -241,6 +245,9 @@ public class Follower : MonoBehaviour {
 
         comidasPropias = new List<GameObject>();
 
+        float localScale = Random.Range(0.85f, 1.15f);
+        transform.localScale = new Vector3(localScale, localScale, localScale);
+
         CambiarModoAlimentacion(false);
     }
 
@@ -248,17 +255,17 @@ public class Follower : MonoBehaviour {
     void Update () {
         DecidirSentimientos();
         DecidirQueHacer();
-        AsignarColorBicho();
+        AsignarColorZona();
 
         if (Time.time > nextActionTime)
         {
             //Actualizar cada x segundos los almaceces y los soviets que existen
             nextActionTime = Time.time + intervalo;
-            if(persona != null){
+            if(emocionActual != EMOCION.NADA){
                 zona = Instantiate(prefabManchaPiso, transform.position, Quaternion.Euler(new Vector3(0, 0, Random.Range(0,360))));
                 zona.GetComponent<SpriteRenderer>().color = colorSpriteZona;
-                ManejarHambre();
             }
+            ManejarHambre();
         }
     }
 
@@ -343,7 +350,10 @@ public class Follower : MonoBehaviour {
     
     void DecidirQueHacer() {
         if(estado == Estado.IDLE) {
-            if(!modoAlimentacion){
+            // Si no no estamos alimentamos proseguimos con el iddle normalmente
+            // Pero si nos deberiamos estar alimentando pero no hay comida, tambien
+            // Para evitar que se paralice por tener hambre y no tener comida
+            if(!modoAlimentacion || (modoAlimentacion  && comidasPropias.Count < 1)){
                 // Lo unico que lo puede sacar de este estado seria que lo toque un usuario
                 // Esto podria ser desde un OnCollision aca o en el usuario
                 DecidirSubEstadoIdle();
@@ -358,7 +368,10 @@ public class Follower : MonoBehaviour {
                     an.SetTrigger("caminando");
                 }
             } 
-            if(!modoAlimentacion){
+            // Si no no estamos alimentamos proseguimos con el trabajando normalmente
+            // Pero si nos deberiamos estar alimentando pero no hay comida, tambien
+            // Para evitar que se paralice por tener hambre y no tener comida
+            if(!modoAlimentacion || (modoAlimentacion && comidasPropias.Count < 1)){
                 DecidirSubEstadoTrabajando();
             } else {
                 ManejarAlimentacion();
@@ -458,20 +471,26 @@ public class Follower : MonoBehaviour {
     public void VaciarSeguido(GameObject exSeguido) {
         persona = null;
         CambiarEstado(Estado.CONVIRTIENDOSE);
-        colorSpriteZona = new Color(1,1,1,0.25f);
+        colorSpriteBicho = new Color(1,1,1,0.25f);
+        sR.color = colorSpriteBicho;
     }
 
     //Esta funcion la llamamos desde el seguido, nos la devuelve cuando le damos a EmpezarASeguir();
     public void ConfirmarNuevoSeguido(GameObject nuevoSeguido){
         persona = nuevoSeguido.transform;
         CambiarEstado(Estado.SIGUIENDO);
-        colorSpriteZona = nuevoSeguido.GetComponent<Seguido>().GetColorSprite();
-        colorSpriteZona.a = 0.25f;
+        colorSpriteBicho = nuevoSeguido.GetComponent<Seguido>().GetColorSprite();
+        sR.color = colorSpriteBicho;
+        
         
         // Le transferimos todas nuestras comidas a la persona
         List<GameObject> comidasATransferir = new List<GameObject>(comidasPropias);
         comidasPropias.Clear();
         persona.GetComponent<Seguido>().AgregarComidasNuevoSeguidor(comidasATransferir);
+        foreach (var item in comidasATransferir)
+        {
+            item.GetComponent<ComidaNueva>().ConfigurarSoloPersona(persona.gameObject);
+        }
     }
 
 
@@ -535,19 +554,40 @@ public class Follower : MonoBehaviour {
                 GameObject comidaCreada = Instantiate(prefabComidaNueva, transform.position, Quaternion.Euler(0,0,Random.Range(0, 360)));
                 if(persona != null)
                 {
-                    comidaCreada.GetComponent<ComidaNueva>().Configurar(persona.gameObject, gameObject);
+                    comidaCreada.GetComponent<ComidaNueva>().Configurar(persona.gameObject, gameObject, null);
+                    persona.GetComponent<Seguido>().AgregarComidaDeSeguidor(comidaCreada);
                 } else 
-                {
-                    comidaCreada.GetComponent<ComidaNueva>().Configurar(null, gameObject);
-                    comidasPropias.Add(comidaCreada);
+                {   
+                    //Si las comidas propias son menos que los spots que tenemos menos 1 (es decir hay un lugar)
+                    if(comidasPropias.Count < 5)
+                    {
+                        Transform spot = transform.Find("puntosComida").GetChild(comidasPropias.Count);
+                        comidaCreada.GetComponent<ComidaNueva>().Configurar(null, gameObject, spot.gameObject);
+                        comidasPropias.Add(comidaCreada);
+                    } else {
+                        Destroy(comidaCreada);
+                    }
                 }
 
-                // Si no hay persona y tenemos 3 o comidas o no, podemos ir a IDLE
-                int pos = Random.Range(0,100);
-                if(pos > 50){
-                    subEstadoActualTrabajando = TRABAJANDO.buscandoTrabajo;
-                } else {
+                // Si no hay persona y hay no tenemos comida llena, podemos ir a IDLE o quedarnos
+                if(persona == null && comidasPropias.Count < 6)
+                {
+                    int pos = Random.Range(0,100);
+                    if(pos > 50){
+                        subEstadoActualTrabajando = TRABAJANDO.buscandoTrabajo;
+                    } else {
+                        CambiarEstado(Estado.IDLE);
+                    }
+                }
+                // Si no hay persona y tenemos mas de 6 vamos si o si a IDLE
+                if(persona == null && comidasPropias.Count >= 6)
+                {
                     CambiarEstado(Estado.IDLE);
+                }
+                // Si hay persona seguimos trabajando hasta el infinito
+                if(persona != null)
+                {
+                    subEstadoActualTrabajando = TRABAJANDO.buscandoTrabajo;
                 }
             }
         }
@@ -588,6 +628,7 @@ public class Follower : MonoBehaviour {
             //Chequear el contador random y si se cumple, vaciar el destino idle y pasarlo a buscando objetivo
             if (tiempoActualRumiar >= tiempoTotalRumiar)
             {
+                tiempoActualRumiar = 0;
                 int pos = Random.Range(0,100);
                 if(pos > 50){
                     subEstadoActualIdle = IDLE.buscandoLugar;
@@ -663,7 +704,7 @@ public class Follower : MonoBehaviour {
                 gds.SetDestination(persona);
             }
             
-            Debug.Log("Se efectuo un cambio de estado: de " + estado + " a " + nuevoEstado);
+            //Debug.Log("Se efectuo un cambio de estado: de " + estado + " a " + nuevoEstado);
             estado = nuevoEstado;
         }
     }
@@ -706,7 +747,7 @@ public class Follower : MonoBehaviour {
         }
     }
 
-    void AsignarColorBicho()
+    void AsignarColorZona()
     {
         float h = Utilidades.Map(hueColorEmocion, 0, 360, 0, 1, true);
         // Para la saturacion: entramos con el nivel de emocion conmo variable a mapear. A mayor intensidad,
@@ -721,7 +762,7 @@ public class Follower : MonoBehaviour {
         }
         
         float v = Utilidades.Map(brightnessColorEmocion, 0, 100, 0, 1, true);
-        sR.color = Color.HSVToRGB(h,s,v);
+        colorSpriteZona = Color.HSVToRGB(h,s,v);
     }
 
     void Morir(string tipoMuerte)
@@ -837,15 +878,18 @@ public class Follower : MonoBehaviour {
         } 
         // Si somos huerfanos simplemente comemos una de las comidas que tengamos almacenadas.
         else if (persona == null){
-            SeleccionarComidaPropia();
+            if(comidasPropias.Count > 0)
+            {
+                SeleccionarComidaPropia();
+            }
         }
-        // Debemos llamar al metodo comer de la comida elegida
     }
 
     void SeleccionarComidaPropia()
     {
-        GameObject comidaComer = comidasPropias[0];
+        GameObject comidaComer = comidasPropias[comidasPropias.Count - 1];
         comidaComer.GetComponent<ComidaNueva>().Comer(gameObject);
+        comidasPropias.Remove(comidaComer);
     }
 }
 

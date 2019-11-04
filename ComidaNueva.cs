@@ -10,6 +10,9 @@ public class ComidaNueva : MonoBehaviour
     Transform sujeto;
 
     [SerializeField]
+    Transform spotSujeto;
+
+    [SerializeField]
     float distanciaStopPersona = 10;
     [SerializeField]
     float distanciaStopSujeto = 4;
@@ -54,13 +57,11 @@ public class ComidaNueva : MonoBehaviour
     }
     void MoveToSujeto()
     {
-        Debug.Log(Vector2.Distance(sujeto.position, transform.position) );
-        Debug.Log( speed * Time.deltaTime);
         if(sujeto != null){
-            if(Vector2.Distance(sujeto.position, transform.position) > distanciaStopSujeto)
+            if(Vector2.Distance(spotSujeto.position, transform.position) > distanciaStopSujeto)
             {
                 float step = speed * Time.deltaTime;
-                transform.position = Vector2.MoveTowards(transform.position, sujeto.position, step);
+                transform.position = Vector2.MoveTowards(transform.position, spotSujeto.position, step);
             }
         } else {
             Debug.LogWarning("ERROR: intentando ir a sujeto sin sujeto seteado");
@@ -79,7 +80,7 @@ public class ComidaNueva : MonoBehaviour
     }
 
     /// <summary> Esta la llamamos cuando se crea</summary>
-    public void Configurar(GameObject _persona, GameObject _sujeto)
+    public void Configurar(GameObject _persona, GameObject _sujeto, GameObject _spotSujeto)
     {
         if(_persona != null)
         {
@@ -87,8 +88,17 @@ public class ComidaNueva : MonoBehaviour
         } else{
             persona = null;
         }
+        
+        if(_spotSujeto != null)
+        {
+            spotSujeto = _spotSujeto.transform;
+        } else{
+            spotSujeto = null;
+        }
+        
         sujeto = _sujeto.transform;
         configurada = true;
+
     }
 
     public void ConfigurarSoloPersona(GameObject _persona)
