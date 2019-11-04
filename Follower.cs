@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using Pathfinding;
 
 /// <summary>
@@ -174,7 +175,44 @@ public class Follower : MonoBehaviour {
     [SerializeField]
     GameObject prefabManchaPiso;
 
+    /// <summary> Contamos en tiempo real cuanto hambre tiene. Sube por cada ciclo y baja al alimentarse. </summary>
+    [SerializeField]
+    int hambre;
 
+    /// <summary> Cuando el hambre supere este umbral va a intentar alimentarse cuando tenga la oportunidad </summary>
+    [SerializeField]
+    int umbralHambreAlimentarse = 33;
+
+    /// <summary> Cuando el hambre supere este umbral va a morir inmediatamente </summary>
+    [SerializeField]
+    int umbralHambreMuerte = 100;
+    
+    /// <summary> Cuando este modo esta prendido, en los estados IDLE y TRABAJANDO va a intentar alimentarse antes. </summary>
+    [SerializeField]
+    bool modoAlimentacion = false;
+
+    /// <summary> Contiene los tres posibles subestados para cuando está activado el modoAlimentacion</summary>
+    public enum COMIENDO {
+        /// <summary> Cuando le pedimos a la persona su lista de comidas almacenadas y seleccionamos una. </summary>
+        /// <summary> Tambien volvemos a caer acá si en el camino yendo alguien se come la comida que teniamos </summary>
+        SELECCIONANDOCOMIDA,
+        /// <summary> Yendo hacia la persona a buscar la comida. </summary>
+        CAMINANDOACOMIDA,
+        /// <summary> Si hemos llegado y la comida existe, nos alimentamos. </summary>
+        COMIENDO
+    }
+
+    /// <summary> Almacenamos en que estado de alimentacion estamos. </summary>
+    [SerializeField]
+    private COMIENDO subEstadoActualComiendo;
+
+    [SerializeField]
+    /// <summary> Si no tenemos persona, nos guardamos las comidas aca. Si tenemos, debería quedar vacío. </summary>
+    List<GameObject> comidasPropias;
+
+    /// <summary> Guardamos el prefab con el que instanciamos la comida en cada iteracion de trabajo.</summary>
+    [SerializeField]
+    private GameObject prefabComidaNueva;
 
     void OnEnable () {
         sR = GetComponent<SpriteRenderer>();
@@ -200,6 +238,10 @@ public class Follower : MonoBehaviour {
 
         nextActionTime = Time.time + Random.Range(0f,2f);
         intervalo = Random.Range(3f, 4f);
+
+        comidasPropias = new List<GameObject>();
+
+        CambiarModoAlimentacion(false);
     }
 
     /// <summary>Todos los frames evaluamos que hacer dependiendo el estado y los eventos</summary>
@@ -215,6 +257,7 @@ public class Follower : MonoBehaviour {
             if(persona != null){
                 zona = Instantiate(prefabManchaPiso, transform.position, Quaternion.Euler(new Vector3(0, 0, Random.Range(0,360))));
                 zona.GetComponent<SpriteRenderer>().color = colorSpriteZona;
+                ManejarHambre();
             }
         }
     }
@@ -300,21 +343,26 @@ public class Follower : MonoBehaviour {
     
     void DecidirQueHacer() {
         if(estado == Estado.IDLE) {
-            // Lo unico que lo puede sacar de este estado seria que lo toque un usuario
-            // Esto podria ser desde un OnCollision aca o en el usuario
-            DecidirSubEstadoIdle();
+            if(!modoAlimentacion){
+                // Lo unico que lo puede sacar de este estado seria que lo toque un usuario
+                // Esto podria ser desde un OnCollision aca o en el usuario
+                DecidirSubEstadoIdle();
+            } else {
+                ManejarAlimentacion();
+            }
         }  else if(estado == Estado.TRABAJANDO) {
             // Obtenemos el estado del persona y si se movio switcheamos aca a siguiendo
             if(persona != null){
                 if(!PersonaEstaParada()){
                     CambiarEstado(Estado.SIGUIENDO);
+                    an.SetTrigger("caminando");
                 }
             } 
-            // Si no hay persona porque se fue volvemos a IDLE (opcionalmente podriamos matarlo)
-            if(persona == null) {
-                CambiarEstado(Estado.IDLE);
+            if(!modoAlimentacion){
+                DecidirSubEstadoTrabajando();
+            } else {
+                ManejarAlimentacion();
             }
-            DecidirSubEstadoTrabajando();
         } else if(estado == Estado.SIGUIENDO) {
             // Obtenemos el estado del persona y si se paro switcheamos aca a trabajando
             if(persona != null){
@@ -419,6 +467,11 @@ public class Follower : MonoBehaviour {
         CambiarEstado(Estado.SIGUIENDO);
         colorSpriteZona = nuevoSeguido.GetComponent<Seguido>().GetColorSprite();
         colorSpriteZona.a = 0.25f;
+        
+        // Le transferimos todas nuestras comidas a la persona
+        List<GameObject> comidasATransferir = new List<GameObject>(comidasPropias);
+        comidasPropias.Clear();
+        persona.GetComponent<Seguido>().AgregarComidasNuevoSeguidor(comidasATransferir);
     }
 
 
@@ -432,13 +485,18 @@ public class Follower : MonoBehaviour {
     {
         if (subEstadoActualTrabajando == TRABAJANDO.buscandoTrabajo)
         {
-            posLugarDeTrabajo = Utilidades.PuntoRandom(gV.piso, persona.position, 25);
+            if(persona != null)
+            {
+                posLugarDeTrabajo = Utilidades.PuntoRandom(gV.piso, persona.position, 40);
+            } else {
+                posLugarDeTrabajo = Utilidades.PuntoRandom(gV.piso, transform.position, 30);
+            }
             gds.SetDestination(posLugarDeTrabajo);
 
             if(posLugarDeTrabajo != Vector3.zero && posLugarDeTrabajo != null){
                 subEstadoActualTrabajando = TRABAJANDO.caminandoAlTrabajo;
                 aiP.canSearch = true;
-                an.SetTrigger("caminando");
+                an.SetTrigger("caminandoPico");
                 float vel = SetVelocidadRandom();
                 ActualizarVelAn(vel);
                 aiP.maxSpeed = vel;
@@ -456,7 +514,7 @@ public class Follower : MonoBehaviour {
             if (aiP.reachedDestination)
             {
                 subEstadoActualTrabajando = TRABAJANDO.trabajando;
-                an.SetTrigger("usandoMartillo");
+                an.SetTrigger("usandoPico");
                 ActualizarVelAn(0);
                 SetTiempoTrabajar();
             }
@@ -467,11 +525,30 @@ public class Follower : MonoBehaviour {
         else if (subEstadoActualTrabajando == TRABAJANDO.trabajando)
         {
             // Aca que espere un rato
-            if(tiempoActualTrabajar > tiempoTotalTrabajar){
-                subEstadoActualTrabajando = TRABAJANDO.buscandoTrabajo;
-                an.SetTrigger("idle"); 
-            } else {
+            if(tiempoActualTrabajar < tiempoTotalTrabajar){
                 tiempoActualTrabajar ++;
+            } else {
+                tiempoActualTrabajar = 0;
+                // Aca entramos cuando ya termino el trabajo, debemos crear una comida.
+                an.SetTrigger("idle"); 
+                // Creamos la comida, la configuramos y la almacenamos en nuestro array
+                GameObject comidaCreada = Instantiate(prefabComidaNueva, transform.position, Quaternion.Euler(0,0,Random.Range(0, 360)));
+                if(persona != null)
+                {
+                    comidaCreada.GetComponent<ComidaNueva>().Configurar(persona.gameObject, gameObject);
+                } else 
+                {
+                    comidaCreada.GetComponent<ComidaNueva>().Configurar(null, gameObject);
+                    comidasPropias.Add(comidaCreada);
+                }
+
+                // Si no hay persona y tenemos 3 o comidas o no, podemos ir a IDLE
+                int pos = Random.Range(0,100);
+                if(pos > 50){
+                    subEstadoActualTrabajando = TRABAJANDO.buscandoTrabajo;
+                } else {
+                    CambiarEstado(Estado.IDLE);
+                }
             }
         }
         else
@@ -493,7 +570,7 @@ public class Follower : MonoBehaviour {
         {
             float vel = SetVelocidadRandom();
             aiP.maxSpeed = vel;
-            gds.SetDestination(Utilidades.PuntoRandom(gV.piso, transform.position, 25));
+            gds.SetDestination(Utilidades.PuntoRandom(gV.piso, transform.position, 50));
             subEstadoActualIdle = IDLE.caminando;
             an.SetTrigger("caminando");
             ActualizarVelAn(vel);
@@ -511,7 +588,12 @@ public class Follower : MonoBehaviour {
             //Chequear el contador random y si se cumple, vaciar el destino idle y pasarlo a buscando objetivo
             if (tiempoActualRumiar >= tiempoTotalRumiar)
             {
-                subEstadoActualIdle = IDLE.buscandoLugar;
+                int pos = Random.Range(0,100);
+                if(pos > 50){
+                    subEstadoActualIdle = IDLE.buscandoLugar;
+                } else {
+                    CambiarEstado(Estado.TRABAJANDO);
+                }
             }
             else
             {
@@ -642,6 +724,15 @@ public class Follower : MonoBehaviour {
         sR.color = Color.HSVToRGB(h,s,v);
     }
 
+    void Morir(string tipoMuerte)
+    {
+        if(tipoMuerte == "hambre")
+        {
+            Destroy(gameObject);
+        }
+    }
+
+
 
     // Accedidas desde ONDAS
     ///////////////////////////////////////////////////////////////////////////
@@ -669,6 +760,92 @@ public class Follower : MonoBehaviour {
                 Debug.Log("ERROR: Se envio un 'AfectarAntena()' sin tipo de totem");
                 break;
         }
+    }
+
+
+     // HAMBRE Y RECURSOS
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+
+    /// <summary> En vez de asignar la variable de modo de alimentacion directamente siempre pasamos por aca
+    /// para aprovechar controles y hooks. </summary>
+    void CambiarModoAlimentacion(bool e) 
+    {
+        modoAlimentacion = e;
+        if(e == true)
+        {
+            subEstadoActualComiendo = COMIENDO.SELECCIONANDOCOMIDA;
+        }
+    }
+    
+    /// <summary> Entramos aca cada 3 o 4 segundos segun el ciclo asignado al azar.
+    /// En principio en cualquier ciclo aumentaos el hambre en un punto y si ademas
+    /// tenemos mas hambre que el umbral ponemos modo alimentacion on a traves de IntentarAlimentarse.
+    /// También lo matamos si el hambre supera el umbral de muerte. </summary>
+    void ManejarHambre()
+    {
+        hambre++;
+        if(hambre > umbralHambreAlimentarse)
+        {
+            IntentarAlimentarse();
+        }
+
+        if(hambre > umbralHambreMuerte)
+        {
+            Morir("hambre");
+        }
+    }
+
+    /// <summary> Prende el modo alimentacion para tener prioridad para comer en los estados de 
+    ///  IDLE y TRABAJANDO, no asi en siguiendo que mantiene su comportamiento. </summary>
+    void IntentarAlimentarse()
+    {
+        CambiarModoAlimentacion(true);
+    }
+
+    /// <summary> Se hace efectivo desde la comida NO DESDE ACA. Bajamos 
+    ///  hambre y por ende dejamos de estar en modo alimentacion. </summary>
+    public void Alimentarse()
+    {
+        hambre = 0;
+        CambiarModoAlimentacion(false);
+    }
+
+    /// <summary> Esta funcion maneja los estados de las distintas etapas del proceso de comer. 
+    /// Es llamada cuando estamos TRABAJANDO o en IDLE y esta activado el modoAlimentacion (porque hay hambre) </summary>
+    void ManejarAlimentacion()
+    {
+        // Si hay persona nos embrollamos en todo el proceso correpondiente para comer una comida.
+        // TODO: si somos huerfanos habria que reemplazar el IDLE por el trabajando, o alternar un ciclo de cada uno
+        // sino se van a morir de hambre los huerfanos
+        if(persona != null)
+        {
+            if(subEstadoActualComiendo == COMIENDO.SELECCIONANDOCOMIDA)
+            {
+
+            }
+            if(subEstadoActualComiendo == COMIENDO.CAMINANDOACOMIDA)
+            {
+
+            }
+            if(subEstadoActualComiendo == COMIENDO.COMIENDO)
+            {
+
+            }
+        } 
+        // Si somos huerfanos simplemente comemos una de las comidas que tengamos almacenadas.
+        else if (persona == null){
+            SeleccionarComidaPropia();
+        }
+        // Debemos llamar al metodo comer de la comida elegida
+    }
+
+    void SeleccionarComidaPropia()
+    {
+        GameObject comidaComer = comidasPropias[0];
+        comidaComer.GetComponent<ComidaNueva>().Comer(gameObject);
     }
 }
 

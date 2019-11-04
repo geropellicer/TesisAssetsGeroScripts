@@ -46,6 +46,25 @@ public class Seguido : MonoBehaviour {
         return colorSprite;
     }
 
+    /// <summary> Listado privado de comidas que va expropiando. De afuera se accede por los metodos de abajo </summary>
+    private List<GameObject> comidas;
+
+    /// <summary> Devuelve una comida no nula al azar </summary>
+    public GameObject ObtenerComidaDisponible()
+    {
+        int random = Random.Range(0,comidas.Count - 1);
+        if(comidas[random] == null){
+            Debug.Log("Atencion: se iba a devolver una comida NULA del array de comidas de la persona " + gameObject.name);
+            Debug.Log("Index de la comida nula: " + random);
+        } 
+        return comidas[random];
+    }
+
+    public void AgregarComidasNuevoSeguidor(List<GameObject> comidasNuevas)
+    {
+        comidas.AddRange(comidasNuevas);
+    }
+
 
     void Awake()
     {
@@ -58,6 +77,8 @@ public class Seguido : MonoBehaviour {
         {
             previousLocations[i] = Vector3.zero;
         }
+
+        comidas = new List<GameObject>();
     }
 
     private void Update() {
@@ -150,11 +171,7 @@ public class Seguido : MonoBehaviour {
         }
     }
 
-    // Hay que agregar using system
-    // public float Map(float x, float in_min, float in_max, float out_min, float out_max, bool clamp = false)
-    // {
-    //     if (clamp) x = Math.Max(in_min, Math.Min(x, in_max));
-    //     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-    // }
+    // TODO: agregar que coma cada cierto tiempo. De esta manera se efectiviza el consumo osocioso de recursos
+    // De lo que producen sus trabajadores.
  
 }
