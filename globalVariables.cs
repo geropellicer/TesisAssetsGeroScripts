@@ -67,6 +67,10 @@ public class globalVariables : MonoBehaviour
 
     spawner sp;
 
+    /// <summary> Listado de depositos de comida que están vivos en el mapa y tienen al menos 1 comida</summmary>
+    [SerializeField]
+    List<GameObject> depositosDeComida;
+
     // Start is called before the first frame update
     void Start() {
         nextActionTime = 0f;
@@ -95,6 +99,9 @@ public class globalVariables : MonoBehaviour
 
         sp = GetComponent<spawner>();
         //son = GameObject.Find("Sonido").GetComponent<sonido>();
+
+
+        depositosDeComida = new List<GameObject>();
 
         Debug.Log("Hay piso?");
         if(piso != null){
@@ -126,6 +133,7 @@ public class globalVariables : MonoBehaviour
             ActualizarCantidadesEdificios();
             ActualizarCantidadesIdealesEdificios();
             PrepararConstruccionesDeEdificios();
+            ActualizarDepositosDeComida(); //V4 Nuevo
         }
         if (Time.time > relojProximoSegundo)
         {
@@ -252,6 +260,21 @@ public class globalVariables : MonoBehaviour
         }
     }
 
+    /// <summary> Actualizamos la variable depositosDeComida para saber cuantos yacimientos vivos y con 1 o más comida hay</summary>
+    void ActualizarDepositosDeComida() 
+    {
+        List<GameObject> todosLosDepositos = new List<GameObject>(GameObject.FindGameObjectsWithTag("depositodecomida"));
+        List<GameObject> devolver = new List<GameObject>();
+        foreach (GameObject depo in todosLosDepositos)
+        {
+            if(depo.GetComponent<depositoDeComida>().ObtenerUnidadesRestantes() > 0) 
+            {
+                devolver.Add(depo);
+            }
+        }
+        depositosDeComida = devolver;
+    }
+
     void PrepararConstruccionesDeEdificios()
     {
         if (cantSoviets < cantSovietsIdeales)
@@ -372,5 +395,60 @@ public class globalVariables : MonoBehaviour
         {
             return false;
         }
+    }
+
+     /// <summary> Devuelve un listado con todos los depositos de comida que tienen al menos 1 alimento
+     /// ordenados de mas cercano a más lejano respecto al punto de comparación proporcionado </summary>
+    public List<GameObject> ObtenerDepositosDeComidaOrdenadosPorCercania(Vector3 posComparacion)
+    {
+        List<GameObject> cacheDepositos = new List<GameObject>(depositosDeComida);
+        List<GameObject> depositosOrdenados = new List<GameObject>();
+
+        for (int i = 0; i < cacheDepositos.Count; i++)
+        {
+            GameObject cacheMasCercano = null;
+            float cacheDistanciaMinima = Mathf.Infinity;
+            foreach (GameObject depo in cacheDepositos)
+            {
+                float cacheDistancia = Vector2.Distance(depo.transform.position, posComparacion);
+                if (cacheDistancia < cacheDistanciaMinima)
+                {
+                    cacheDistanciaMinima = cacheDistancia;
+                    cacheMasCercano = depo;
+                }
+            }
+            cacheDepositos.Remove(cacheMasCercano);
+            depositosOrdenados.Add(cacheMasCercano);
+        }
+        return depositosOrdenados;
+    }
+
+    /// <summary> Devuelve un listado de depositos que están dentro de una distancia maxima de un punto, ordenados
+    /// de más cercano a más lejano del punto de comparacion proporcionado. </summary>
+    public List<GameObject> ObtenerDepositosDeComidaOrdenadosPorCercania(Vector3 posComparacionPersona, float distanciaMax)
+    {
+        List<GameObject> cacheDepositos = new List<GameObject>(depositosDeComida);
+        List<GameObject> depositosOrdenados = new List<GameObject>();
+
+        for (int i = 0; i < cacheDepositos.Count; i++)
+        {
+            GameObject cacheMasCercano = null;
+            float cacheDistanciaMinima = Mathf.Infinity;
+            foreach (GameObject depo in cacheDepositos)
+            {
+                float cacheDistancia = Vector2.Distance(depo.transform.position, posComparacionPersona);
+                if (cacheDistancia < cacheDistanciaMinima)
+                {
+                    cacheDistanciaMinima = cacheDistancia;
+                    cacheMasCercano = depo;
+                }
+            }
+            cacheDepositos.Remove(cacheMasCercano);
+            if(cacheDistanciaMinima <= distanciaMax)
+            {
+                depositosOrdenados.Add(cacheMasCercano);
+            }
+        }
+        return depositosOrdenados;
     }
 }

@@ -218,6 +218,28 @@ public class Follower : MonoBehaviour {
     [SerializeField]
     private GameObject prefabComidaNueva;
 
+    [SerializeField]
+    /// <summary> Guardamos estáticamente una lista con los depositos de comida cercanos a nosotros o a nuesta persona
+    ///  según el caso. Para actualizarlo hay que llamar a la funcion ActualizarDepositosDeComidaCercanos()</summary>
+    List<GameObject> depositosDeComidaCercanos;
+
+    /// <summary> El deposito de los cercanos y posibles que habian que elegimos. Debemos reiniciarlo null al irnos de trabajando.</summary>
+    [SerializeField]
+    GameObject depositosDeComidaSeleccionado;
+
+    /// <summary> Tiempo que llevamos esperando actualmete </summary>
+    [SerializeField]
+    int esperarDepositoActual = 0;
+    /// <summary> Tiempo que tenemos que esperar para volver a consultar si hay depositos cerca </summary>
+    [SerializeField]
+    int esperarDepositoTotal = 120;
+    /// <summary> Si estamos esperando o no </summary>
+    [SerializeField]
+    bool esperandoDeposito;
+    
+
+   
+
     void OnEnable () {
         sR = GetComponent<SpriteRenderer>();
         aiP = GetComponent<AIPath>();
@@ -247,6 +269,8 @@ public class Follower : MonoBehaviour {
 
         float localScale = Random.Range(0.85f, 1.15f);
         transform.localScale = new Vector3(localScale, localScale, localScale);
+
+        depositosDeComidaCercanos = new List<GameObject>();
 
         CambiarModoAlimentacion(false);
     }
@@ -506,13 +530,55 @@ public class Follower : MonoBehaviour {
         {
             if(persona != null)
             {
-                posLugarDeTrabajo = Utilidades.PuntoRandom(gV.piso, persona.position, 40);
+                // Si tenemos persona, sebemos buscar un deposito dentro de un margen de la persona
+                if(!esperandoDeposito){
+                    Debug.Log("probando con persona");
+                    ActualizarDepositosDeComidaCercanos(persona.transform.position, 40, true);
+                }
+                if(depositosDeComidaCercanos.Count > 0)
+                {
+                    int randomIndex = Random.Range(0, depositosDeComidaCercanos.Count - 1);
+                    depositosDeComidaSeleccionado = depositosDeComidaCercanos[randomIndex];
+                    posLugarDeTrabajo = depositosDeComidaSeleccionado.transform.position;
+                } else
+                {
+                    esperandoDeposito = true;
+                    if(esperarDepositoActual > esperarDepositoTotal)
+                    {
+                        esperarDepositoActual = 0;
+                        esperandoDeposito = false;
+                    } else
+                    {
+                        esperarDepositoActual++;
+                    }
+                }
             } else {
-                posLugarDeTrabajo = Utilidades.PuntoRandom(gV.piso, transform.position, 30);
+                // Si no tenemos persona vamos al deposito más cercano sin importar la distancia
+                if(!esperandoDeposito){
+                    Debug.Log("probando sin persona");
+                    ActualizarDepositosDeComidaCercanos(transform.position, 0, false);
+                }
+                if(depositosDeComidaCercanos.Count > 0)
+                {
+                    int index = 0;
+                    depositosDeComidaSeleccionado = depositosDeComidaCercanos[index];
+                    posLugarDeTrabajo = depositosDeComidaSeleccionado.transform.position;
+                } else
+                {
+                    esperandoDeposito = true;
+                    if(esperarDepositoActual > esperarDepositoTotal)
+                    {
+                        esperarDepositoActual = 0;
+                        esperandoDeposito = false;
+                    } else
+                    {
+                        esperarDepositoActual++;
+                    }
+                }
             }
-            gds.SetDestination(posLugarDeTrabajo);
 
             if(posLugarDeTrabajo != Vector3.zero && posLugarDeTrabajo != null){
+                gds.SetDestination(posLugarDeTrabajo);
                 subEstadoActualTrabajando = TRABAJANDO.caminandoAlTrabajo;
                 aiP.canSearch = true;
                 an.SetTrigger("caminandoPico");
@@ -551,7 +617,7 @@ public class Follower : MonoBehaviour {
                 // Aca entramos cuando ya termino el trabajo, debemos crear una comida.
                 an.SetTrigger("idle"); 
                 // Creamos la comida, la configuramos y la almacenamos en nuestro array
-                GameObject comidaCreada = Instantiate(prefabComidaNueva, transform.position, Quaternion.Euler(0,0,Random.Range(0, 360)));
+                GameObject comidaCreada = depositosDeComidaSeleccionado.GetComponent<depositoDeComida>().Cosechar();
                 if(persona != null)
                 {
                     comidaCreada.GetComponent<ComidaNueva>().Configurar(persona.gameObject, gameObject, null);
@@ -596,6 +662,22 @@ public class Follower : MonoBehaviour {
             Debug.LogError("ERROR: no hay ningun subestado trabajando asignado");
         }
     
+    }
+
+    /// <summary> Llama a la funcion de las globalVariable spara guardar localmente cuales son los dpeositos cercnaos,
+    /// si los hubiera. En el caso de que haya persona debemos pasarla como puntoRef, en caso de ser huerfanos pasamos 
+    /// la pos actual del bicho como puntoRef y la distancia no importa. </summary>
+    void ActualizarDepositosDeComidaCercanos(Vector3 puntoRef, float distancia, bool restringirPorDistancia)
+    {
+        if(restringirPorDistancia)
+        {
+            // En este caso la hemos llamado sigueindo a una persona para no alejarnos mucho de la persona
+            depositosDeComidaCercanos = gV.ObtenerDepositosDeComidaOrdenadosPorCercania(puntoRef, distancia);
+        } else
+        {
+            // En este caso la hemos llamado siendo huéfanos, no restringimos por distancia, obtenemos toda la lista.
+            depositosDeComidaCercanos = gV.ObtenerDepositosDeComidaOrdenadosPorCercania(puntoRef);
+        }
     }
 
 
@@ -702,6 +784,15 @@ public class Follower : MonoBehaviour {
                 an.SetTrigger("caminando");
                 aiP.canSearch = true;
                 gds.SetDestination(persona);
+            }
+
+            if(estado == Estado.TRABAJANDO)
+            {
+                depositosDeComidaSeleccionado = null;
+                esperarDepositoActual = 0;
+                esperandoDeposito = false;
+                posLugarDeTrabajo = Vector3.zero;
+                depositosDeComidaSeleccionado = null;
             }
             
             //Debug.Log("Se efectuo un cambio de estado: de " + estado + " a " + nuevoEstado);

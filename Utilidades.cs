@@ -94,7 +94,7 @@ public static class Utilidades
     }
 
     /// <summary>
-    /// Genera un punto random en un planto provisto en el primer GameObject, garantizando que esté a menos distancia que la provista del
+    /// Genera un punto random en un plano provisto en el primer GameObject, garantizando que esté a menos distancia que la provista del
     /// punto de comparación provista. Garantizando que sea caminable en el patfhinding.
     /// </summary>
     /// <param name="piso"></param>
