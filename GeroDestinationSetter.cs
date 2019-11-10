@@ -12,11 +12,16 @@ namespace Pathfinding {
         
 		[SerializeField]
 		private Transform targetTransform;
+
+		[SerializeField]
+		private float distanciaObjetivo;
 		
 		IAstarAI ai;
+		AIPath aiPath;
 
 		void OnEnable () {
 			ai = GetComponent<IAstarAI>();
+			aiPath = GetComponent<AIPath>();
 			// Update the destination right before searching for a path as well.
 			// This is enough in theory, but this script will also update the destination every
 			// frame as the destination is used for debugging and may be used for other things by other
@@ -56,6 +61,18 @@ namespace Pathfinding {
 		public void ClearDestination(){
 			targetTransform = null;
 			targetV3 = Vector3.zero;
+		}
+
+		/// <summary> Toma el AIPath component de este sujeto y le asigna a cuanta distancia del obejtivo debe estar </summary>
+		/// <summary> para considerar que llegó a destino. Para una formacion militar, tiene que ser muy poco,</summary>
+		/// <summary> para una persona bastante más (incluso debería depender de la cantidad de seguidores), etc. </summary> 
+		public void SetDistanciaObjetivo(float dist)
+		{
+			if(dist != distanciaObjetivo)
+			{
+				distanciaObjetivo = dist;
+				aiPath.endReachedDistance = distanciaObjetivo;
+			}
 		}
 	}
 }
