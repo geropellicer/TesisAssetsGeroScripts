@@ -32,10 +32,15 @@ public class Follower : MonoBehaviour {
     private SpriteRenderer sR;
 
     /// <summary>Guardamos el color que vamos a aplicarle al sR del mismo bicho (PERTENENCIA A UNA PERSONA).</summary>    
+    [SerializeField]
     private Color colorSpriteBicho;
-
-     /// <summary>Guardamos el color que vamos a aplicarle al sR de la zona (SEGUN LA EMOCION QUE SIENTA EL BICHO).</summary>    
+    /// <summary>Guardamos el color que vamos a aplicarle a la zona del bicho(PERTENENCIA A UNA PERSONA).</summary>    
+    [SerializeField]
     private Color colorSpriteZona;
+
+     /// <summary>Guardamos el color que vamos a aplicarle al sR del anillo emocion (SEGUN LA EMOCION QUE SIENTA EL BICHO).</summary>    
+    [SerializeField]
+    private Color colorSpriteEmocion;
 
     /// <summary> El fondo del bicho que se pinta del color de la emocion del bicho </summary>
     private GameObject zona;
@@ -236,15 +241,104 @@ public class Follower : MonoBehaviour {
     /// <summary> Si estamos esperando o no </summary>
     [SerializeField]
     bool esperandoDeposito;
+
+    /// <summary> Si estamos en modo de forzado de boludeo o no. Caso afirmativo puede salirse del trabajo y forzar un IDLE </summary>
+    [SerializeField]
+    bool forzarBoludear = false;
+    /// <summary> Lo que llevamos esperado en este ciclo desde que se activó el forzar boludear </summary>
+    [SerializeField]
+    int esperarBoludearActual = 0;
+    /// <summary> Lo que tenemos que esperar para completar un ciclo de espera y sacar el forzarBolduear </summary>
+    [SerializeField]
+    int esperarBoludearTotal = 120;
+
+        /// <summary> Si estamos en modo de forzado de boludeo o no. Caso afirmativo puede salirse del trabajo y forzar un IDLE </summary>
+    [SerializeField]
+    bool forzarIndividualista = false;
+    /// <summary> Lo que llevamos esperado en este ciclo desde que se activó el forzar boludear </summary>
+    [SerializeField]
+    int esperarIndividualistaActual = 0;
+    /// <summary> Lo que tenemos que esperar para completar un ciclo de espera y sacar el forzarBolduear </summary>
+    [SerializeField]
+    int esperarIndividualistaTotal = 120;
+
+    /// <summary> Referencia al sprite renderer del anillo de emociones que debemos pintar del color correspondiente </summary>
+    SpriteRenderer srAnilloEmociones; 
+
+    /// <summary> Este numero representa que lugar ocupamos en la lista de seguidores de la persona a la que seguimos. </summary>
+    /// <summary> Lo usamos por ejemplo en forzarMilitar para otorgarle un lugar en la formacion segun su lugar en la lista </summary>
+    [SerializeField]
+    int indexSeguidorEnPersona;
     
+    /// <summary> Si estamos en modo de forzado de Militar o no. Caso afirmativo formar militarmente, etc. </summary>
+    [SerializeField]
+    bool forzarMilitar = false;
+    /// <summary> Lo que llevamos esperado en este ciclo desde que se activó el forzar militar </summary>
+    [SerializeField]
+    int esperarMilitarActual = 0;
+    /// <summary> Lo que tenemos que esperar para completar un ciclo de espera y sacar el forzarMilitar </summary>
+    [SerializeField]
+    int esperarMilitarTotal = 240;
 
-   
 
+
+    // FIN VARIABLES
+    // /////////////////////////////////////////////////////////////////////////
+    //  /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    //  /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+
+
+
+
+    
+    // MANEJOS GENERALES
+    // /////////////////////////////////////////////////////////////////////////
+    //  /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    
+    
     void OnEnable () {
         sR = GetComponent<SpriteRenderer>();
         aiP = GetComponent<AIPath>();
         gds = GetComponent<GeroDestinationSetter>();
         an = GetComponent<Animator>();
+
+        srAnilloEmociones = transform.Find("AnilloEmocion").GetComponent<SpriteRenderer>();
+        srAnilloEmociones.color = new Color(1,1,1,0);
 
         globalManager = GameObject.Find("GlobalManager");
         gV = globalManager.GetComponent<globalVariables>();
@@ -272,6 +366,8 @@ public class Follower : MonoBehaviour {
 
         depositosDeComidaCercanos = new List<GameObject>();
 
+        colorSpriteBicho = new Color(1,1,1,.25f);
+
         CambiarModoAlimentacion(false);
     }
 
@@ -279,16 +375,76 @@ public class Follower : MonoBehaviour {
     void Update () {
         DecidirSentimientos();
         DecidirQueHacer();
-        AsignarColorZona();
+        AsignarColorEmocion();
+
+        if(forzarBoludear){
+            if(esperarBoludearActual >= esperarBoludearTotal)
+            {
+                forzarBoludear = false;
+                esperarBoludearActual = 0;
+            } else{
+                esperarBoludearActual++;
+            }
+        }
+
+        if(forzarIndividualista){
+            if(esperarIndividualistaActual >= esperarIndividualistaTotal)
+            {
+                forzarIndividualista = false;
+                esperarIndividualistaActual = 0;
+            } else{
+                esperarIndividualistaActual++;
+            }
+        }
+
+        if(forzarMilitar){
+            if(esperarMilitarActual >= esperarMilitarTotal)
+            {
+                forzarMilitar = false;
+                esperarMilitarActual = 0;
+            } else{
+                esperarMilitarActual++;
+            }
+        }
 
         if (Time.time > nextActionTime)
         {
-            //Actualizar cada x segundos los almaceces y los soviets que existen
             nextActionTime = Time.time + intervalo;
-            if(emocionActual != EMOCION.NADA){
+
+            if(persona != null)
+            {
                 zona = Instantiate(prefabManchaPiso, transform.position, Quaternion.Euler(new Vector3(0, 0, Random.Range(0,360))));
-                zona.GetComponent<SpriteRenderer>().color = colorSpriteZona;
+                zona.GetComponent<SpriteRenderer>().color = colorSpriteZona; 
+            }           
+
+            if(emocionActual != EMOCION.NADA)
+            {
+                srAnilloEmociones.color = colorSpriteEmocion;
+            } if(emocionActual == EMOCION.NADA)
+            {
+                srAnilloEmociones.color = new Color(1,1,1,0);
             }
+
+            if(forzarMilitar)
+            {
+                if(persona != null)
+                {
+                    SetPosicionFormacionMilitar(true);
+                } else {
+                    SetPosicionFormacionMilitar(false);
+                }
+            }
+
+
+            if(emocionActual == EMOCION.HACERGUERRA)
+            {
+                if( Utilidades.RandomWeightedBool(nivelEmocionActual, 2250))
+                {
+                    ForzarMilitar();
+                }
+            }
+
+
             ManejarHambre();
         }
     }
@@ -388,8 +544,11 @@ public class Follower : MonoBehaviour {
             // Obtenemos el estado del persona y si se movio switcheamos aca a siguiendo
             if(persona != null){
                 if(!PersonaEstaParada()){
-                    CambiarEstado(Estado.SIGUIENDO);
-                    an.SetTrigger("caminando");
+                    if(!forzarBoludear)
+                    {
+                        CambiarEstado(Estado.SIGUIENDO);
+                        an.SetTrigger("caminando");
+                    }
                 }
             } 
             // Si no no estamos alimentamos proseguimos con el trabajando normalmente
@@ -401,11 +560,23 @@ public class Follower : MonoBehaviour {
                 ManejarAlimentacion();
             }
         } else if(estado == Estado.SIGUIENDO) {
+            Debug.Log("siguiendo");
             // Obtenemos el estado del persona y si se paro switcheamos aca a trabajando
             if(persona != null){
                 if(PersonaEstaParada() && GetComponent<AIPath>().reachedDestination){
-                    CambiarEstado(Estado.TRABAJANDO);
-                    an.SetTrigger("idle");
+                    if(!forzarBoludear && !forzarIndividualista)
+                    {
+                        CambiarEstado(Estado.TRABAJANDO);
+                        an.SetTrigger("idle");
+                    } else if(forzarBoludear)
+                    {
+                        CambiarEstado(Estado.IDLE);
+                        an.SetTrigger("idle");
+                    }
+                }
+                if (forzarIndividualista) {
+                    Debug.Log("Siguiendo en forzar individualista");    
+                    DesacoplarDePersona();
                 }
             }
             // Si no hay persona porque se fue volvemos a IDLE (opcionalmente podriamos matarlo)
@@ -424,8 +595,15 @@ public class Follower : MonoBehaviour {
     /// Si es con otro sujeto: de la misma persona, ignoramos. De otra persona, maneja quien tiene persona con mas seguidores.</summary>
     void OnTriggerEnter2D(Collider2D other)
     {
-        if(other.gameObject.tag == "persona"){
+        /*if(other.gameObject.tag == "persona"){
             if(persona == null || GameObject.ReferenceEquals(persona, other.gameObject)){
+                ManejarColisionesConPersona(other);
+            }
+        }*/
+        // Arreglo: si nuestra persona es null y si nuestra persona no es la misma que con la que estamos chocando
+        // (antes estaba o si es la misma) 
+        if(other.gameObject.tag == "persona"){
+            if(persona == null && !GameObject.ReferenceEquals(persona, other.gameObject)){
                 ManejarColisionesConPersona(other);
             }
         }
@@ -473,14 +651,20 @@ public class Follower : MonoBehaviour {
     /// <summary>Cuando tocamos un trigger y es una persona y nosotros no tenemos persona 
     /// (somos huerfanos o tenemos una persona distinta).</summary>
     void ManejarColisionesConPersona(Collider2D other){
-        other.gameObject.GetComponent<Seguido>().SolicitarEmpezarASeguir(gameObject, false);    
+        if(!forzarIndividualista)
+        {
+            other.gameObject.GetComponent<Seguido>().SolicitarEmpezarASeguir(gameObject, false);    
+        }
     }
 
     /// <summary>Cuando tocamos un trigger y es un sujeto huerfano y nosotros tenemos persona, lo captamos.</summary>
     void ManejarColisionesConSujetoHuerfano(Collider2D other){
         // Notar que no le pasamos este sujeto como parametro, sino el que colisiono con nosotros
         // Notar que se lo mandamos a esta persona
-        persona.GetComponent<Seguido>().SolicitarEmpezarASeguir(other.gameObject, false);            
+        if(!forzarIndividualista)
+        {
+            persona.GetComponent<Seguido>().SolicitarEmpezarASeguir(other.gameObject, false);  
+        }          
     }
 
     /// <summary>Cuando tocamos un trigger y es un sujeto cuya persona tiene menos seguidores que este</summary>
@@ -492,10 +676,13 @@ public class Follower : MonoBehaviour {
     }
 
     // Esta funcion se ejecuta desde la persona como devolucion a cuando le mandamos DejarDeSeguir();
+    // También se ejecuta desde la persona cuando empezamos a segur a otra persona con mas seguidores, en la transición
+    // Entre seguir a una y otra persona.
     public void VaciarSeguido(GameObject exSeguido) {
         persona = null;
         CambiarEstado(Estado.CONVIRTIENDOSE);
-        colorSpriteBicho = new Color(1,1,1,0.25f);
+        colorSpriteBicho = new Color(1,1,1,1);
+        colorSpriteZona = new Color(1,1,1,0);
         sR.color = colorSpriteBicho;
     }
 
@@ -504,6 +691,7 @@ public class Follower : MonoBehaviour {
         persona = nuevoSeguido.transform;
         CambiarEstado(Estado.SIGUIENDO);
         colorSpriteBicho = nuevoSeguido.GetComponent<Seguido>().GetColorSprite();
+        colorSpriteZona = new Color(colorSpriteBicho.r, colorSpriteBicho.g, colorSpriteBicho.b, 0.25f);
         sR.color = colorSpriteBicho;
         
         
@@ -514,6 +702,93 @@ public class Follower : MonoBehaviour {
         foreach (var item in comidasATransferir)
         {
             item.GetComponent<ComidaNueva>().ConfigurarSoloPersona(persona.gameObject);
+        }
+    }
+
+
+
+    // INDIVIDUALISTA
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+
+    void DesacoplarDePersona()
+    {
+        // En vez de vacir el seguido directamente, en cuyo caso la persona quedaría sin avisar, le mandamos 
+        // a la persona un dejar de seguir, que nos devuelve un vaciar seguido, asi ambas partes quedan actualizadas
+        //VaciarSeguido(persona.gameObject);
+        persona.GetComponent<Seguido>().DejarDeSeguir(gameObject);
+    }
+    
+    void ForzarIndividualista()
+    {
+        if(!forzarIndividualista)
+        {
+            esperarIndividualistaActual = 0;
+            esperarIndividualistaTotal = Random.Range(120, 450);
+            forzarIndividualista = true;
+            // TODO: aca segría un buen lugar para disparar la animación de pensando / boludeando
+        }
+    }
+
+
+
+    // MILITAR
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    
+    void ForzarMilitar()
+    {
+        if(!forzarMilitar)
+        {
+            esperarMilitarActual = 0;
+            esperarMilitarTotal = Random.Range(260, 620);
+            forzarMilitar = true;
+            // TODO: aca segría un buen lugar para disparar la animación de pensando / boludeando
+        }
+    }
+    
+    
+    void SetPosicionFormacionMilitar(bool tienePersona)
+    {
+        if(tienePersona)
+        {
+            float multiplicadorUnidad = 15f;
+
+
+            Vector3 posPersona = persona.transform.position;
+            float offsetX = 0;
+            float offsetY = -1f * multiplicadorUnidad;
+
+
+            // Definimos la posicion en X
+            if(indexSeguidorEnPersona % 4 == 0)
+            {
+                offsetX = -1.5f * multiplicadorUnidad;
+            } else if (indexSeguidorEnPersona % 4 == 1)
+            {
+                offsetX = -.5f * multiplicadorUnidad;
+            } else if (indexSeguidorEnPersona % 4 == 2)
+            {
+                offsetX = .5f * multiplicadorUnidad;                
+            } else if (indexSeguidorEnPersona % 4 == 3)
+            {
+                offsetX = 1.5f * multiplicadorUnidad;                
+            }
+
+            // Definimos la posición en Y partiendo del offset base
+            offsetY -= Mathf.CeilToInt(indexSeguidorEnPersona / 4) * multiplicadorUnidad;
+
+            // Conformamos el vector definitvo
+            Vector3 posEnFormacion = new Vector3(posPersona.x + offsetX, posPersona.y + offsetY, posPersona.z);
+
+            // Lo asignamos para que lo siga
+            gds.SetDestination(posEnFormacion);
+            gds.SetDistanciaObjetivo(1f);
+            Debug.Log("Se asigno una posición en formacion militar a " + name + ": " + posEnFormacion);
         }
     }
 
@@ -532,7 +807,6 @@ public class Follower : MonoBehaviour {
             {
                 // Si tenemos persona, sebemos buscar un deposito dentro de un margen de la persona
                 if(!esperandoDeposito){
-                    Debug.Log("probando con persona");
                     ActualizarDepositosDeComidaCercanos(persona.transform.position, 40, true);
                 }
                 if(depositosDeComidaCercanos.Count > 0)
@@ -554,10 +828,8 @@ public class Follower : MonoBehaviour {
                 }
             } else {
                 // Si no tenemos persona vamos al deposito más cercano sin importar la distancia
-                if(!esperandoDeposito){
-                    Debug.Log("probando sin persona");
-                    ActualizarDepositosDeComidaCercanos(transform.position, 0, false);
-                }
+                Debug.Log("probando sin persona");
+                ActualizarDepositosDeComidaCercanos(transform.position, 0, false);
                 if(depositosDeComidaCercanos.Count > 0)
                 {
                     int index = 0;
@@ -579,6 +851,7 @@ public class Follower : MonoBehaviour {
 
             if(posLugarDeTrabajo != Vector3.zero && posLugarDeTrabajo != null){
                 gds.SetDestination(posLugarDeTrabajo);
+                gds.SetDistanciaObjetivo(10);
                 subEstadoActualTrabajando = TRABAJANDO.caminandoAlTrabajo;
                 aiP.canSearch = true;
                 an.SetTrigger("caminandoPico");
@@ -594,6 +867,14 @@ public class Follower : MonoBehaviour {
                 Debug.LogWarning("Error: Se intenta ir a un lugar de trabajo no inicializado");
                 subEstadoActualTrabajando = TRABAJANDO.buscandoTrabajo;
                 return;
+            }
+
+            if(emocionActual == EMOCION.BOLUDEAR)
+            {
+                if( Utilidades.RandomWeightedBool(nivelEmocionActual, 1000))
+                {
+                    ForzarBoludear();
+                }
             }
 
             if (aiP.reachedDestination)
@@ -612,17 +893,30 @@ public class Follower : MonoBehaviour {
             // Aca que espere un rato
             if(tiempoActualTrabajar < tiempoTotalTrabajar){
                 tiempoActualTrabajar ++;
+
+                if(emocionActual == EMOCION.INDIVIDUALISTA)
+                {
+                    if( Utilidades.RandomWeightedBool(nivelEmocionActual, 1000))
+                    {
+                        ForzarIndividualista();
+                    }
+                }
+
             } else {
                 tiempoActualTrabajar = 0;
                 // Aca entramos cuando ya termino el trabajo, debemos crear una comida.
                 an.SetTrigger("idle"); 
                 // Creamos la comida, la configuramos y la almacenamos en nuestro array
-                GameObject comidaCreada = depositosDeComidaSeleccionado.GetComponent<depositoDeComida>().Cosechar();
-                if(persona != null)
+                 GameObject comidaCreada = null;
+                if(depositosDeComidaSeleccionado != null)
+                {
+                    comidaCreada = depositosDeComidaSeleccionado.GetComponent<depositoDeComida>().Cosechar();
+                }
+                if(persona != null && comidaCreada != null)
                 {
                     comidaCreada.GetComponent<ComidaNueva>().Configurar(persona.gameObject, gameObject, null);
                     persona.GetComponent<Seguido>().AgregarComidaDeSeguidor(comidaCreada);
-                } else 
+                } else if(persona == null && comidaCreada != null)
                 {   
                     //Si las comidas propias son menos que los spots que tenemos menos 1 (es decir hay un lugar)
                     if(comidasPropias.Count < 5)
@@ -639,6 +933,12 @@ public class Follower : MonoBehaviour {
                 if(persona == null && comidasPropias.Count < 6)
                 {
                     int pos = Random.Range(0,100);
+
+                    if(forzarIndividualista)
+                    {
+                        pos = 100;
+                    }
+
                     if(pos > 50){
                         subEstadoActualTrabajando = TRABAJANDO.buscandoTrabajo;
                     } else {
@@ -681,6 +981,32 @@ public class Follower : MonoBehaviour {
     }
 
 
+
+
+
+
+     // BOLUDEAR
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+
+    void ForzarBoludear()
+    {
+        if(!forzarBoludear)
+        {
+            esperarBoludearActual = 0;
+            esperarBoludearTotal = Random.Range(60, 240);
+            forzarBoludear = true;
+            CambiarEstado(Estado.IDLE);
+            // TODO: aca segría un buen lugar para disparar la animación de pensando / boludeando
+        }
+    }
+
+  
+  
+  
+  
     // IDLE
     ///////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////
@@ -693,6 +1019,7 @@ public class Follower : MonoBehaviour {
             float vel = SetVelocidadRandom();
             aiP.maxSpeed = vel;
             gds.SetDestination(Utilidades.PuntoRandom(gV.piso, transform.position, 50));
+            gds.SetDistanciaObjetivo(15);
             subEstadoActualIdle = IDLE.caminando;
             an.SetTrigger("caminando");
             ActualizarVelAn(vel);
@@ -712,15 +1039,35 @@ public class Follower : MonoBehaviour {
             {
                 tiempoActualRumiar = 0;
                 int pos = Random.Range(0,100);
+
+                if(forzarIndividualista)
+                {
+                    pos = 1;
+                }
+
                 if(pos > 50){
                     subEstadoActualIdle = IDLE.buscandoLugar;
                 } else {
-                    CambiarEstado(Estado.TRABAJANDO);
+                    if(!forzarBoludear)
+                    {
+                        CambiarEstado(Estado.TRABAJANDO);
+                    } else {
+                        Debug.Log("Yendo a IDLE forzado por boludeo");
+                        subEstadoActualIdle = IDLE.buscandoLugar;
+                    }
                 }
             }
             else
             {
                 tiempoActualRumiar++;
+
+                if(emocionActual == EMOCION.INDIVIDUALISTA)
+                {
+                    if( Utilidades.RandomWeightedBool(nivelEmocionActual, 1000))
+                    {
+                        ForzarIndividualista();
+                    }
+                }
             }
         }
         else
@@ -784,6 +1131,7 @@ public class Follower : MonoBehaviour {
                 an.SetTrigger("caminando");
                 aiP.canSearch = true;
                 gds.SetDestination(persona);
+                gds.SetDistanciaObjetivo(20 + 10 * persona.GetComponent<Seguido>().GetNumSeguidores() / 10);
             }
 
             if(estado == Estado.TRABAJANDO)
@@ -798,6 +1146,13 @@ public class Follower : MonoBehaviour {
             //Debug.Log("Se efectuo un cambio de estado: de " + estado + " a " + nuevoEstado);
             estado = nuevoEstado;
         }
+    }
+
+    /// <summary> Cuando la persona actualiza su lista d eseguidores (agrega o quita a alguien) llama a esta funcion</summary>
+    /// <summary> en todos sus seguidores para tenerlos actualizados de que lugar ocupan en sus seguidores.</summary>
+    public void ActualizarIndexEnSeguido(int index)
+    {
+        indexSeguidorEnPersona = index;
     }
 
     /// <summary> Para cambiar cualquier emocion no se debe asignar directamente, sino que debriamos pasar por aca </summary>
@@ -838,7 +1193,7 @@ public class Follower : MonoBehaviour {
         }
     }
 
-    void AsignarColorZona()
+    void AsignarColorEmocion()
     {
         float h = Utilidades.Map(hueColorEmocion, 0, 360, 0, 1, true);
         // Para la saturacion: entramos con el nivel de emocion conmo variable a mapear. A mayor intensidad,
@@ -853,13 +1208,19 @@ public class Follower : MonoBehaviour {
         }
         
         float v = Utilidades.Map(brightnessColorEmocion, 0, 100, 0, 1, true);
-        colorSpriteZona = Color.HSVToRGB(h,s,v);
+        colorSpriteEmocion = Color.HSVToRGB(h,s,v);
+        // El alfa se lo asignamos como la saturacion, es decir, que empiece de 0 y vaya aumentando con la intensidad de la emoción.
+        colorSpriteEmocion.a = s;
     }
 
     void Morir(string tipoMuerte)
     {
         if(tipoMuerte == "hambre")
         {
+            if(persona != null)
+            {
+                persona.GetComponent<Seguido>().AvisarMuerteSeguidor(gameObject);
+            }
             Destroy(gameObject);
         }
     }
