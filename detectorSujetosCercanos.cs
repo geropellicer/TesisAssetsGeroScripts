@@ -5,9 +5,6 @@ using UnityEngine;
 public class detectorSujetosCercanos : MonoBehaviour
 {
 
-    // TODO: Para ser mas eficientes, en lugar de crear y destruir detectores, podriamos tener un solo detector que activamos y desactivamos
-    // y al cual vamos teletransportando a la persona que lo convoca  (y le vamos cambiando el creador que le asignamos)
-
     [SerializeField]
     GameObject creador;
 
