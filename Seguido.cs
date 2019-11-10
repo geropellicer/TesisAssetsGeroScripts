@@ -238,8 +238,11 @@ public class Seguido : MonoBehaviour {
         int i = 0;
         foreach (GameObject seguidor in seguidores)
         {
-            seguidor.GetComponent<Follower>().ActualizarIndexEnSeguido(i);
-            i++;
+            if(seguidor.GetComponent<Follower>().ObtenerEmocionActual() == Follower.EMOCION.HACERGUERRA)
+            {
+                seguidor.GetComponent<Follower>().ActualizarIndexEnSeguido(i);
+                i++;
+            }
         }
     }
 

@@ -782,7 +782,6 @@ public class Follower : MonoBehaviour {
             esperarIndividualistaActual = 0;
             esperarIndividualistaTotal = Random.Range(120, 450);
             forzarIndividualista = true;
-            // TODO: aca segría un buen lugar para disparar la animación de pensando / boludeando
         }
     }
 
@@ -801,7 +800,7 @@ public class Follower : MonoBehaviour {
             esperarMilitarActual = 0;
             esperarMilitarTotal = Random.Range(260, 620);
             forzarMilitar = true;
-            // TODO: aca segría un buen lugar para disparar la animación de pensando / boludeando
+            // TODO: aca segría un buen lugar para disparar la animación militar
         }
     }
 
@@ -897,7 +896,7 @@ public class Follower : MonoBehaviour {
             esperarNacionalismoActual = 0;
             esperarNacionalismoTotal = Random.Range(260, 620);
             forzarNacionalismo = true;
-            // TODO: aca segría un buen lugar para disparar la animación de pensando / boludeando
+            // TODO: aca segría un buen lugar para disparar la animación
         }
     }
 
