@@ -79,6 +79,28 @@ public class Seguido : MonoBehaviour {
     float intervaloComer;
 
 
+    /// <summary> Almacenamos la ultima medicionn de si alrededor nuestro, en un rango determinado en el 
+    /// detecroSujtosCercanos hay sujetos de otra persona o no.</summary>
+    [SerializeField]
+    bool haySujetosAjenosEnRango;
+    /// <summary> Esto lo leemos desde los sujetos que siguen a esta persona. </summary>
+    public bool ObtenerHaySujetosAjenosEnRango()
+    {
+        return haySujetosAjenosEnRango;
+    }
+    /// <summary> Esto lo seteamos desde e detectorSujetosCercanos que invocamos. </summary>
+    public void SetHaySujetosAjenosEnRango(bool hay)
+    {
+        haySujetosAjenosEnRango = hay;
+    }
+    [SerializeField]
+    GameObject detector;
+
+    public detectorSujetosCercanos Detector()
+    {
+        return detector.GetComponent<detectorSujetosCercanos>();
+    }
+
 
     void Awake()
     {
@@ -99,6 +121,8 @@ public class Seguido : MonoBehaviour {
 
         nextActionTimeComer = Time.time + Random.Range(2f,4f);
         intervaloComer= Random.Range(6, 12);
+
+        detector = transform.GetChild(0).gameObject;
     }
 
     private void Update() {
@@ -120,6 +144,10 @@ public class Seguido : MonoBehaviour {
                 comidas.Remove(comidaComer);
                 Destroy(comidaComer);
             }
+
+            // Instanciamos un objeto invisible con un collider, lo configuramos para que responda a este objeto
+            // y que nos devuelva al morir si collisiono con algun sujeto cuya persona no somos nosotros o no
+            detector.SetActive(true);
         }
     }
 
@@ -214,4 +242,19 @@ public class Seguido : MonoBehaviour {
             i++;
         }
     }
+
+    public int ContarFollowersNacionalistas()
+    {
+        List<GameObject> followerNacionalistas = new List<GameObject>();
+        foreach (GameObject follower in seguidores)
+        {
+            if(follower.GetComponent<Follower>().ObtenerEmocionActual() == Follower.EMOCION.AMORALLIDER)
+            {
+                followerNacionalistas.Add(follower);
+            }
+        }
+        return followerNacionalistas.Count;
+    }
+
+    
 }

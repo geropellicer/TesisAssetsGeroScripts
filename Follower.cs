@@ -280,7 +280,20 @@ public class Follower : MonoBehaviour {
     [SerializeField]
     int esperarMilitarTotal = 240;
 
+    /// <summary> Esta variable se actualiza cada cierto tiempo desde el update. Es verdadera </summary>
+    /// <summary> Cuando hay sujetos de otras personas en un determinado rango y está activado forzarMilitar. </summary>
+    [SerializeField]
+    bool militar_haySujetosEnRango;
 
+    /// <summary> Si estamos en modo de forzado de Militar o no. Caso afirmativo formar militarmente, etc. </summary>
+    [SerializeField]
+    bool forzarNacionalismo = false;
+    /// <summary> Lo que llevamos esperado en este ciclo desde que se activó el forzar militar </summary>
+    [SerializeField]
+    int esperarNacionalismoActual = 0;
+    /// <summary> Lo que tenemos que esperar para completar un ciclo de espera y sacar el forzarMilitar </summary>
+    [SerializeField]
+    int esperarNacionalismoTotal = 240;
 
     // FIN VARIABLES
     // /////////////////////////////////////////////////////////////////////////
@@ -368,6 +381,8 @@ public class Follower : MonoBehaviour {
 
         colorSpriteBicho = new Color(1,1,1,.25f);
 
+        persona = null;
+
         CambiarModoAlimentacion(false);
     }
 
@@ -400,11 +415,23 @@ public class Follower : MonoBehaviour {
         if(forzarMilitar){
             if(esperarMilitarActual >= esperarMilitarTotal)
             {
-                forzarMilitar = false;
-                esperarMilitarActual = 0;
+                SalirForzarMilitar();
             } else{
                 esperarMilitarActual++;
             }
+        }
+
+        if(forzarNacionalismo){
+           /* if(esperarNacionalismoActual >= esperarNacionalismoTotal)
+            {
+                forzarNacionalismo = false;
+                esperarNacionalismoActual = 0;
+            } else{
+                esperarNacionalismoActual++;
+            }
+            */
+
+            // Por ahora vamos a probar en que el nacioanlismo se mantenga permanente
         }
 
         if (Time.time > nextActionTime)
@@ -433,6 +460,8 @@ public class Follower : MonoBehaviour {
                 } else {
                     SetPosicionFormacionMilitar(false);
                 }
+
+                ActualizarHaySujetosEnRango();
             }
 
 
@@ -441,6 +470,14 @@ public class Follower : MonoBehaviour {
                 if( Utilidades.RandomWeightedBool(nivelEmocionActual, 2250))
                 {
                     ForzarMilitar();
+                }
+            }
+
+            if(emocionActual == EMOCION.AMORALLIDER)
+            {
+                if( Utilidades.RandomWeightedBool(nivelEmocionActual, 2250))
+                {
+                    ForzarNacionalismo();
                 }
             }
 
@@ -533,12 +570,15 @@ public class Follower : MonoBehaviour {
             // Si no no estamos alimentamos proseguimos con el iddle normalmente
             // Pero si nos deberiamos estar alimentando pero no hay comida, tambien
             // Para evitar que se paralice por tener hambre y no tener comida
-            if(!modoAlimentacion || (modoAlimentacion  && comidasPropias.Count < 1)){
+            if(!modoAlimentacion || (modoAlimentacion  && comidasPropias.Count < 1) && !forzarMilitar){
                 // Lo unico que lo puede sacar de este estado seria que lo toque un usuario
                 // Esto podria ser desde un OnCollision aca o en el usuario
                 DecidirSubEstadoIdle();
-            } else {
+            } else if(modoAlimentacion && comidasPropias.Count > 0) {
                 ManejarAlimentacion();
+            } else if(forzarMilitar)
+            {
+                ManejarForzarMilitar();
             }
         }  else if(estado == Estado.TRABAJANDO) {
             // Obtenemos el estado del persona y si se movio switcheamos aca a siguiendo
@@ -554,10 +594,13 @@ public class Follower : MonoBehaviour {
             // Si no no estamos alimentamos proseguimos con el trabajando normalmente
             // Pero si nos deberiamos estar alimentando pero no hay comida, tambien
             // Para evitar que se paralice por tener hambre y no tener comida
-            if(!modoAlimentacion || (modoAlimentacion && comidasPropias.Count < 1)){
+            if(!modoAlimentacion || (modoAlimentacion && comidasPropias.Count < 1)  && !forzarMilitar){
                 DecidirSubEstadoTrabajando();
-            } else {
+            } else if(modoAlimentacion && comidasPropias.Count > 0) {
                 ManejarAlimentacion();
+            } else if(forzarMilitar)
+            {
+                ManejarForzarMilitar();
             }
         } else if(estado == Estado.SIGUIENDO) {
             Debug.Log("siguiendo");
@@ -603,8 +646,13 @@ public class Follower : MonoBehaviour {
         // Arreglo: si nuestra persona es null y si nuestra persona no es la misma que con la que estamos chocando
         // (antes estaba o si es la misma) 
         if(other.gameObject.tag == "persona"){
-            if(persona == null && !GameObject.ReferenceEquals(persona, other.gameObject)){
-                ManejarColisionesConPersona(other);
+            if(persona == null){
+                // Si mi persona es null soy huerfano. Solo llamo a manejar la colision si enre los seguidores de
+                // la persona con la que me estoy chocando no hay al menos 10 nacionalistas
+                if(other.gameObject.GetComponent<Seguido>().ContarFollowersNacionalistas() < 10)
+                {
+                    ManejarColisionesHuerfanoConPersona(other);
+                }
             }
         }
         if(other.gameObject.tag == "sujeto"){
@@ -614,10 +662,16 @@ public class Follower : MonoBehaviour {
             if(persona != null) {
                 // Si el otro sujeto no tiene persona, es huerfano, manejamos aca
                 if(other.gameObject.GetComponent<Follower>().persona == null){
-                    ManejarColisionesConSujetoHuerfano(other);
+                    if(!forzarNacionalismo)
+                    {
+                        ManejarColisionesConSujetoHuerfano(other);
+                    }
                 } else if(persona.GetComponent<Seguido>().GetNumSeguidores() > other.gameObject.GetComponent<Follower>().persona.GetComponent<Seguido>().GetNumSeguidores()){
                     // Si el otro sujeto tiene persona y tiene menos seguidores que nosotros, manejamos aca
-                    ManejarColisionesConSujeto(other);
+                    if(!forzarNacionalismo)
+                    {
+                        ManejarColisionesConSujeto(other);
+                    }
                 }
                 if(GameObject.Equals(persona,  other.gameObject.GetComponent<Follower>().persona))
                 {
@@ -650,7 +704,7 @@ public class Follower : MonoBehaviour {
 
     /// <summary>Cuando tocamos un trigger y es una persona y nosotros no tenemos persona 
     /// (somos huerfanos o tenemos una persona distinta).</summary>
-    void ManejarColisionesConPersona(Collider2D other){
+    void ManejarColisionesHuerfanoConPersona(Collider2D other){
         if(!forzarIndividualista)
         {
             other.gameObject.GetComponent<Seguido>().SolicitarEmpezarASeguir(gameObject, false);    
@@ -750,10 +804,48 @@ public class Follower : MonoBehaviour {
             // TODO: aca segría un buen lugar para disparar la animación de pensando / boludeando
         }
     }
+
+    void SalirForzarMilitar()
+    {
+        forzarMilitar = false;
+        tiempoActualTrabajar = 0;
+        tiempoActualRumiar = 0;
+        esperarMilitarActual = 0;
+        subEstadoActualComiendo = COMIENDO.SELECCIONANDOCOMIDA;
+        subEstadoActualIdle = IDLE.buscandoLugar;
+        subEstadoActualTrabajando = TRABAJANDO.buscandoTrabajo;
+    }
+
+    void ManejarForzarMilitar()
+    {
+        if(persona != null)
+        {
+            if(militar_haySujetosEnRango)
+            {
+                //Seteamos el destination setter en el punto en el que se detecto a alguien
+                Vector3 pos = persona.GetComponent<Seguido>().Detector().ObtenerUltimaPosDetectada();
+                gds.SetDestination(pos);
+                gds.SetDistanciaObjetivo(20);
+            } else {
+                // Seteamos el destination setter en el lugar de la formacion y esperamos tranquilamente
+                SetPosicionFormacionMilitar(true);
+                gds.SetDistanciaObjetivo(3);
+            }
+        }
+    }
+
+    void ActualizarHaySujetosEnRango()
+    {
+        if(persona != null)
+        {
+            persona.GetComponent<Seguido>().ObtenerHaySujetosAjenosEnRango();
+        }
+    }
     
     
     void SetPosicionFormacionMilitar(bool tienePersona)
-    {
+    {   
+        // if(tienePersona && !militar_militar_haySujetosEnRango)
         if(tienePersona)
         {
             float multiplicadorUnidad = 15f;
@@ -793,6 +885,22 @@ public class Follower : MonoBehaviour {
     }
 
 
+     // NACIONALISMO
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    void ForzarNacionalismo()
+    {
+        if(!forzarNacionalismo)
+        {
+            esperarNacionalismoActual = 0;
+            esperarNacionalismoTotal = Random.Range(260, 620);
+            forzarNacionalismo = true;
+            // TODO: aca segría un buen lugar para disparar la animación de pensando / boludeando
+        }
+    }
+
 
     // Trabajando
     ///////////////////////////////////////////////////////////////////////////
@@ -801,6 +909,7 @@ public class Follower : MonoBehaviour {
     ///////////////////////////////////////////////////////////////////////////
     void DecidirSubEstadoTrabajando() 
     {
+        Debug.Log("Decidiendo subestado trabajando");
         if (subEstadoActualTrabajando == TRABAJANDO.buscandoTrabajo)
         {
             if(persona != null)
@@ -851,7 +960,7 @@ public class Follower : MonoBehaviour {
 
             if(posLugarDeTrabajo != Vector3.zero && posLugarDeTrabajo != null){
                 gds.SetDestination(posLugarDeTrabajo);
-                gds.SetDistanciaObjetivo(10);
+                gds.SetDistanciaObjetivo(20);
                 subEstadoActualTrabajando = TRABAJANDO.caminandoAlTrabajo;
                 aiP.canSearch = true;
                 an.SetTrigger("caminandoPico");
@@ -1131,7 +1240,7 @@ public class Follower : MonoBehaviour {
                 an.SetTrigger("caminando");
                 aiP.canSearch = true;
                 gds.SetDestination(persona);
-                gds.SetDistanciaObjetivo(20 + 10 * persona.GetComponent<Seguido>().GetNumSeguidores() / 10);
+                gds.SetDistanciaObjetivo(30 + 10 * persona.GetComponent<Seguido>().GetNumSeguidores() / 10);
             }
 
             if(estado == Estado.TRABAJANDO)
