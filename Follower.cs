@@ -436,6 +436,23 @@ public class Follower : MonoBehaviour {
 
         if (Time.time > nextActionTime)
         {
+            if(efectoPrivadoComercial > 0)
+            {
+                efectoPrivadoComercial--;
+            }
+            if(efectoPrivadoEntretenimiento > 0)
+            {
+                efectoPrivadoEntretenimiento--;
+            }
+            if(efectoPublicoEstatal > 0)
+            {
+                efectoPublicoEstatal--;
+            }
+            if(efectoPublicoMilitar > 0)
+            {
+                efectoPublicoMilitar--;
+            }
+
             nextActionTime = Time.time + intervalo;
 
             if(persona != null)
