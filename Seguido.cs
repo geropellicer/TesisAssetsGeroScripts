@@ -130,7 +130,7 @@ public class Seguido : MonoBehaviour {
         if(tienePersona){
             int peso1 = numSeguidores;
             int peso2 = posibleNuevoSeguidor.GetComponent<Follower>().persona.GetComponent<Seguido>().GetNumSeguidores();
-            if(RandomWeightedBool(peso1, peso2)){
+            if(Utilidades.RandomWeightedBool(peso1, peso2)){
                 AceptarEmpezarASeguir(posibleNuevoSeguidor);
             }
         } else {
@@ -146,13 +146,21 @@ public class Seguido : MonoBehaviour {
         seguidores.Add(nuevoSeguidor);
         numSeguidores = seguidores.Count;
         nuevoSeguidor.GetComponent<Follower>().ConfirmarNuevoSeguido(gameObject);
+        ActualizarIndicesSeguidores();
     }
 
     /// <summary> Cuando otra persona nos roba un seguidor pasamos por aca (llamado desde el bicho)</summary>
     public void DejarDeSeguir(GameObject seguidorPerdido) {
-        seguidores.Remove(seguidorPerdido);
-        numSeguidores = seguidores.Count;
-        seguidorPerdido.GetComponent<Follower>().VaciarSeguido(gameObject);
+        if(seguidores.Contains(seguidorPerdido))
+        {
+            seguidores.Remove(seguidorPerdido);
+            numSeguidores = seguidores.Count;
+            seguidorPerdido.GetComponent<Follower>().VaciarSeguido(gameObject);
+            ActualizarIndicesSeguidores();
+        } else
+        {
+            Debug.LogWarning("ERROR: en el dejar de seguir de " + seguidorPerdido.name + " se intento desacoplar de la persona " + name + " pero no estaba en su lista de seguidores");
+        }
     }
 
 
@@ -183,33 +191,27 @@ public class Seguido : MonoBehaviour {
         }
     }
 
-
-    /// <summary> Devuelve el indice al azar de uno de los pesos insertados en el array</summary>
-    /// <summary> For chance calculations. </summary>
-    public static bool RandomWeightedBool (float chanceTrue, float chanceFalse)
+    /// <summary> Cuando un bicho se muere de hambre, pasamos por acá, llamado desde el bicho que nos seguía y está muriendo. </summary>
+    public void AvisarMuerteSeguidor(GameObject seguidorMuerto)
     {
-
-        // Hay que ingresar con una variable chance de entr  0,01 a 1 que exprese las posibilidades de que salga True
-        float chance = (chanceTrue - chanceFalse) / chanceTrue;
-
-        // convert chance
-        int target = (int)(chance * 100);
-        // random value
-        int random = Random.Range(1, 101);
-        // compare to probability range
-        if (random >= 1 && random <= target)
+        if(seguidores.Contains(seguidorMuerto))
         {
-            Debug.Log("Convocado y aceptado");
-            return true;
-        }
-        else
+            seguidores.Remove(seguidorMuerto);
+            numSeguidores--;
+            ActualizarIndicesSeguidores();
+        } else
         {
-            Debug.Log("Convocado y rechazado");
-            return false;
+            Debug.LogWarning("ERROR: en la muerte de " + seguidorMuerto.name + " se intento desacoplar de la persona " + name + " pero no estaba en su lista de seguidores");
         }
     }
 
-    // TODO: agregar que coma cada cierto tiempo. De esta manera se efectiviza el consumo osocioso de recursos
-    // De lo que producen sus trabajadores.
- 
+    void ActualizarIndicesSeguidores()
+    {
+        int i = 0;
+        foreach (GameObject seguidor in seguidores)
+        {
+            seguidor.GetComponent<Follower>().ActualizarIndexEnSeguido(i);
+            i++;
+        }
+    }
 }

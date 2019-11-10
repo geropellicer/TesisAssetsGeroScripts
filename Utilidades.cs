@@ -150,4 +150,26 @@ public static class Utilidades
         angle = Mathf.Atan2(targetPos.y, targetPos.x) * Mathf.Rad2Deg;
         objeto.transform.rotation = Quaternion.Euler(new Vector3(0, 0, angle + offset));
     }
+
+    /// <summary> Devuelve true o false al azar pero teniendo en cuenta el peso que le asignemos a cada posibilidad. </summary>
+    public static bool RandomWeightedBool (float chanceTrue, float chanceFalse)
+    {
+
+        // Hay que ingresar con una variable chance de entr  0,01 a 1 que exprese las posibilidades de que salga True
+        float chance = (chanceTrue - chanceFalse) / chanceTrue;
+
+        // convert chance
+        int target = (int)(chance * 100);
+        // random value
+        int random = UnityEngine.Random.Range(1, 101);
+        // compare to probability range
+        if (random >= 1 && random <= target)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
 }
