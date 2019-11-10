@@ -435,12 +435,15 @@ public class globalVariables : MonoBehaviour
             GameObject cacheMasCercano = null;
             float cacheDistanciaMinima = Mathf.Infinity;
             foreach (GameObject depo in cacheDepositos)
-            {
-                float cacheDistancia = Vector2.Distance(depo.transform.position, posComparacionPersona);
-                if (cacheDistancia < cacheDistanciaMinima)
+            {   
+                if(depo != null)
                 {
-                    cacheDistanciaMinima = cacheDistancia;
-                    cacheMasCercano = depo;
+                    float cacheDistancia = Vector2.Distance(depo.transform.position, posComparacionPersona);
+                    if (cacheDistancia < cacheDistanciaMinima)
+                    {
+                        cacheDistanciaMinima = cacheDistancia;
+                        cacheMasCercano = depo;
+                    }
                 }
             }
             cacheDepositos.Remove(cacheMasCercano);
