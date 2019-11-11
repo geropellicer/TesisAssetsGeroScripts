@@ -295,12 +295,87 @@ public class Follower : MonoBehaviour {
     [SerializeField]
     int esperarNacionalismoTotal = 240;
 
+
+    /// <summary> Variable en la que guardamos el grado de descontento en una escala del 1 al 100 </summary>
+    /// <summary> Aumenta con el hambre y siendo esclavo de una persona, disminuye con los discursos </summary>
+    [SerializeField]
+    int porcentajeDescontento;
+    /// <summary> Devolvemos para el exterior el grado de descontento en una escala del 1 al 100. </summary>
+    public int ObtenerPorcentajeDescontento()
+    {
+        return porcentajeDescontento;
+    }
+
+    /// <summary> Si esta activado, se fuerza este modo por encima de todos los demas </summary>
+    [SerializeField]
+    bool forzarRevolucion;
+
+    /// <summary> Posibles estados del proceso revolucionario, en la funcion DecidirQueHaceRevolucion() se explican </summary>
+    public enum REVOLUCION
+    {
+        NADA,
+        BUSCANDOANTENA,
+        YENDOAANTENA,
+        APAGANDOANTENA,
+        BUSCANDOPRENDERFUEGO,
+        YENDOAPRENDERFUEGO,
+        PRENDIENDOFUEGO,
+        BUSCANDOPORDONDESALIR,
+        SALIENDO
+    }
+
+    /// <summary> Almacena en qué estado estamos actualmente dentro de un proceso revolucionario</summary>
+    [SerializeField]
+    REVOLUCION estadoRevolucionActual;
+    /// <summary> Cuando recien activamos el estado revolucionario por primera vez debemos sortear si va a ir
+    /// a una antena o a prender un fuego, por eso necesitamos pasar por un momento de inicializacion </summary>
+    [SerializeField]
+    bool estadoRevolucionInicializado;
+    /// <summary> Si es incendiario o saboteador de antenas. Se sortea en el primer frame de DecidirQueHHacerRevolucion </summary>
+    [SerializeField]
+    bool esIncendiario;
+    /// <summary> Si es incendiario o saboteador de antenas. Se sortea en el primer frame de DecidirQueHHacerRevolucion </summary>
+    [SerializeField]
+    bool esSaboteador;
+    /// <summary> Guardamos el lugar al que tiene que ir (puede ser un punto a prender fuego) </summary>
+    [SerializeField]
+    Vector3 posPrenderFuego;
+    /// <summary> El totem que hemos elegido para ir a apagar en caso de revlucion </summary>
+    [SerializeField]
+    GameObject totemSeleccionado;
+    /// <summary> Almacenamos el prefab del incendio para instnaicarlo si es incendiario en proceso revolucionario </summary>
+    [SerializeField]
+    GameObject prefabIncendio;
+    /// <summary> pregreso que llevamos desde que empezmaos el incendio </summary>
+    [SerializeField]
+    int progresoIncendioActual = 0;
+    /// <summary> Total al que tenemos que llegar para poder instanciar un incendio </summary>
+    [SerializeField]
+    int progresoIncendioTotal = 240;
+
+    
+    /// <summary> Cuando queremos apagar una antena prendemos esto para que al ser detectado por la antena,
+    /// esta empiece a restar en su cuenta atrás de apagado (si el totem selccionado coincide, para evitar apagar
+    /// a la pasada otra antena que no es el target) </summary>
+    [SerializeField]
+    bool intencionDeApagarAntena;
+    /// <summary> Devuelve al exterior la intencion de apagar o no la antena </summary>
+    public bool IntencionDeApagarAntena()
+    {
+        return intencionDeApagarAntena;
+    }
+
+    /// <summary> El vector3 que va acontener el punto al cual debemos dirigirnos para evacuar la obra </summary>
+    Vector3 posSalidaElegida;
+
+
+
     // FIN VARIABLES
     // /////////////////////////////////////////////////////////////////////////
-    //  /////////////////////////////////////////////////////////////////////////
     // /////////////////////////////////////////////////////////////////////////
     // /////////////////////////////////////////////////////////////////////////
-    //  /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
+    // /////////////////////////////////////////////////////////////////////////
     // /////////////////////////////////////////////////////////////////////////
     // /////////////////////////////////////////////////////////////////////////
     // /////////////////////////////////////////////////////////////////////////
@@ -389,7 +464,13 @@ public class Follower : MonoBehaviour {
     /// <summary>Todos los frames evaluamos que hacer dependiendo el estado y los eventos</summary>
     void Update () {
         DecidirSentimientos();
-        DecidirQueHacer();
+        if(!forzarRevolucion)
+        {
+            DecidirQueHacer();
+        } else if(forzarRevolucion)
+        {
+            DecidirQueHacerRevolucion();
+        }
         AsignarColorEmocion();
 
         if(forzarBoludear){
@@ -496,6 +577,12 @@ public class Follower : MonoBehaviour {
                 {
                     ForzarNacionalismo();
                 }
+            }
+
+
+            if(nivelEmocionActual > 2000)
+            {
+                porcentajeDescontento--;
             }
 
 
@@ -623,7 +710,7 @@ public class Follower : MonoBehaviour {
             Debug.Log("siguiendo");
             // Obtenemos el estado del persona y si se paro switcheamos aca a trabajando
             if(persona != null){
-                if(PersonaEstaParada() && GetComponent<AIPath>().reachedDestination){
+                if(PersonaEstaParada() && aiP.reachedDestination){
                     if(!forzarBoludear && !forzarIndividualista)
                     {
                         CambiarEstado(Estado.TRABAJANDO);
@@ -925,7 +1012,6 @@ public class Follower : MonoBehaviour {
     ///////////////////////////////////////////////////////////////////////////
     void DecidirSubEstadoTrabajando() 
     {
-        Debug.Log("Decidiendo subestado trabajando");
         if (subEstadoActualTrabajando == TRABAJANDO.buscandoTrabajo)
         {
             if(persona != null)
@@ -1347,6 +1433,14 @@ public class Follower : MonoBehaviour {
                 persona.GetComponent<Seguido>().AvisarMuerteSeguidor(gameObject);
             }
             Destroy(gameObject);
+        } 
+        else if(tipoMuerte == "SalidoDelMapa")
+        {
+            if(persona != null)
+            {
+                persona.GetComponent<Seguido>().AvisarMuerteSeguidor(gameObject);
+            }
+            Destroy(gameObject);
         }
     }
 
@@ -1381,7 +1475,7 @@ public class Follower : MonoBehaviour {
     }
 
 
-     // HAMBRE Y RECURSOS
+    // HAMBRE Y RECURSOS
     ///////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////
@@ -1408,6 +1502,18 @@ public class Follower : MonoBehaviour {
         if(hambre > umbralHambreAlimentarse)
         {
             IntentarAlimentarse();
+            if(porcentajeDescontento < 100)
+            {
+                porcentajeDescontento+=2;
+            }
+        }
+
+        if(hambre > 50)
+        {
+            if(porcentajeDescontento < 100)
+            {
+                porcentajeDescontento += 4;
+            }
         }
 
         if(hambre > umbralHambreMuerte)
@@ -1467,6 +1573,208 @@ public class Follower : MonoBehaviour {
         GameObject comidaComer = comidasPropias[comidasPropias.Count - 1];
         comidaComer.GetComponent<ComidaNueva>().Comer(gameObject);
         comidasPropias.Remove(comidaComer);
+    }
+
+
+
+
+
+    // REVOLUCION
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+
+
+    /// <summary> Esta funcion maneja los estados de las distintas etapas del proceso de comer. 
+    /// Es llamada cuando estamos TRABAJANDO o en IDLE y esta activado el modoAlimentacion (porque hay hambre) </summary>
+    public void ActivarProcesoRevolucionario()
+    {
+        forzarRevolucion = true;
+    }
+
+    public void DesactivarProcesoRevolucionario()
+    {
+        forzarRevolucion = false;
+        estadoRevolucionInicializado = false;
+    }
+
+    /// <summary>
+    /// Tenemos que pasar por 8 estados (en realidad 5 porque los primeros 3 son en paralelo)
+    /// El flow seria asi: basado en azar, puede que le toque 
+    /// A) Encontrar una antena -> ir -> apagar la antena -> buscar por donde salir -> salir
+    /// B) Encontrar un punto en el piso (o un deposito) -> ir -> prender fuego -> buscar por donde salir -> salir
+    /// </summary>
+    void DecidirQueHacerRevolucion()
+    {
+        if(!estadoRevolucionInicializado)
+        {
+            if(Utilidades.RandomWeightedBool(1,1))
+            {
+                esIncendiario = true;
+                estadoRevolucionActual = REVOLUCION.BUSCANDOPRENDERFUEGO;
+            }
+            else 
+            {
+                esSaboteador = true;
+                estadoRevolucionActual = REVOLUCION.BUSCANDOANTENA;
+            }
+            estadoRevolucionInicializado = true;
+        }
+
+
+        if(esSaboteador)
+        {
+            if(estadoRevolucionActual == REVOLUCION.BUSCANDOPRENDERFUEGO)
+            {
+                if(depositosDeComidaCercanos.Count > 0)
+                {
+                    int randomIndex = Random.Range(0, depositosDeComidaCercanos.Count - 1);
+                    depositosDeComidaSeleccionado = depositosDeComidaCercanos[randomIndex];
+                    posPrenderFuego = depositosDeComidaSeleccionado.transform.position;
+                }
+                else
+                {
+                    posPrenderFuego = Utilidades.PuntoRandom(gV.piso);
+                }
+
+                if(posPrenderFuego != Vector3.zero && posLugarDeTrabajo != null){
+                    gds.SetDestination(posPrenderFuego);
+                    gds.SetDistanciaObjetivo(15);
+                    aiP.canSearch = true;
+                    an.SetTrigger("caminandoCartel");
+                    float vel = SetVelocidadRandom();
+                    ActualizarVelAn(vel);
+                    aiP.maxSpeed = vel;
+                    estadoRevolucionActual = REVOLUCION.YENDOAPRENDERFUEGO;
+                }
+            }
+            if(estadoRevolucionActual == REVOLUCION.YENDOAPRENDERFUEGO)
+            {
+                if(aiP.reachedDestination)
+                {
+                    estadoRevolucionActual = REVOLUCION.PRENDIENDOFUEGO;
+                }
+            }
+            if(estadoRevolucionActual == REVOLUCION.PRENDIENDOFUEGO)
+            {
+                if(progresoIncendioActual > progresoIncendioTotal)
+                {
+                    Instantiate(prefabIncendio, transform.position, Quaternion.identity);
+                    estadoRevolucionActual = REVOLUCION.BUSCANDOPORDONDESALIR;
+                } else 
+                {
+                    progresoIncendioActual++;
+                }
+            }
+        }
+
+
+        if(esIncendiario)
+        {
+            if(estadoRevolucionActual == REVOLUCION.BUSCANDOANTENA)
+            {
+                GameObject[] totemsEnEscena = GameObject.FindGameObjectsWithTag("totem");
+                if(totemsEnEscena.Length > 0)
+                {
+                    int randomIndex = Random.Range(0, depositosDeComidaCercanos.Count - 1);
+                    totemSeleccionado = totemsEnEscena[randomIndex];
+                }
+                else
+                {
+                    esIncendiario = true;
+                    esSaboteador = false;
+                    estadoRevolucionActual = REVOLUCION.BUSCANDOPRENDERFUEGO;
+                }
+
+                if(totemSeleccionado != null){
+                    gds.SetDestination(totemSeleccionado.transform);
+                    gds.SetDistanciaObjetivo(25);
+                    aiP.canSearch = true;
+                    an.SetTrigger("caminandoCartel");
+                    float vel = SetVelocidadRandom();
+                    ActualizarVelAn(vel);
+                    aiP.maxSpeed = vel;
+                    estadoRevolucionActual = REVOLUCION.YENDOAANTENA;
+                    intencionDeApagarAntena = true;
+                }
+            }
+            if(estadoRevolucionActual == REVOLUCION.YENDOAANTENA)
+            {
+                if(aiP.reachedDestination)
+                {
+                    estadoRevolucionActual = REVOLUCION.APAGANDOANTENA;
+                }
+            }
+            if(estadoRevolucionActual == REVOLUCION.APAGANDOANTENA)
+            {
+                // Aca en lugar de un contador debemos quedarnos hasta que efectivamente se apague la antena
+                // Esto puede ocurrir por accion directa del sujeto o antes de que este llegue, de parte de otros
+                // o incluso casualmente de un usuario
+                if(!totemSeleccionado.GetComponent<totem>().ObtenerEstaTransmitiendo())
+                {
+                    estadoRevolucionActual = REVOLUCION.BUSCANDOPORDONDESALIR;
+                    intencionDeApagarAntena = false;
+                }
+            }
+        }
+
+
+        if(estadoRevolucionActual == REVOLUCION.BUSCANDOPORDONDESALIR)
+        {
+            int randomIndex = Random.Range(0, 4);
+            GameObject salidaElegida = gV.markersLimites[randomIndex];
+            if(randomIndex == 0)
+            {
+                // caso de que elegimos el costado izquierdo
+                float offsetX = -100;
+                float offsetY = Random.Range(-150f, 150f);
+                
+                posSalidaElegida = new Vector3(salidaElegida.transform.position.x + offsetX, salidaElegida.transform.position.y + offsetY, salidaElegida.transform.position.z);
+            } else if(randomIndex == 1)
+            {
+                // caso de que elegimos el costado derecho
+                float offsetX = 100;
+                float offsetY = Random.Range(-150f, 150f);
+                
+                posSalidaElegida = new Vector3(salidaElegida.transform.position.x + offsetX, salidaElegida.transform.position.y + offsetY, salidaElegida.transform.position.z);
+            }
+            if(randomIndex == 2)
+            {
+                // caso de que elegimos el costado de arriba
+                float offsetX = Random.Range(-100f, 100f);
+                float offsetY = 100f;
+                
+                posSalidaElegida = new Vector3(salidaElegida.transform.position.x + offsetX, salidaElegida.transform.position.y + offsetY, salidaElegida.transform.position.z);
+            }
+            if(randomIndex == 0)
+            {
+                // caso de que elegimos el costado de abajo
+               float offsetX = Random.Range(-100f, 100f);
+                float offsetY = -100f;
+                
+                posSalidaElegida = new Vector3(salidaElegida.transform.position.x + offsetX, salidaElegida.transform.position.y + offsetY, salidaElegida.transform.position.z);
+            }
+
+            if(posSalidaElegida != null && posSalidaElegida != Vector3.zero)
+            {
+                gds.SetDestination(posSalidaElegida);
+                gds.SetDistanciaObjetivo(10);
+                aiP.maxSpeed = velMax;
+                estadoRevolucionActual = REVOLUCION.SALIENDO;
+            } else
+            {
+                Debug.Log("ERROR: pasamos por todas las opciones en BUSCANDOPORDONDESALIR y el punto por donde salir sigue sin inicializarse");
+            }
+        }
+        if(estadoRevolucionActual == REVOLUCION.SALIENDO)
+        {
+            if(aiP.reachedDestination)
+            {
+                Morir("SalidoDelMapa");
+            }
+        }
+        
     }
 }
 

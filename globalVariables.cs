@@ -71,6 +71,16 @@ public class globalVariables : MonoBehaviour
     [SerializeField]
     List<GameObject> depositosDeComida;
 
+    /// <summary> El promedio del descontento (del 1 al 100) de todos los sujetos de la escena actualizada cada 5s</summary>
+    [SerializeField]
+    float promedioDescontento = 0;
+
+    [SerializeField]
+    bool forzarRevolucion;
+
+    [SerializeField]
+    public GameObject[] markersLimites;
+
     // Start is called before the first frame update
     void Start() {
         nextActionTime = 0f;
@@ -134,6 +144,7 @@ public class globalVariables : MonoBehaviour
             ActualizarCantidadesIdealesEdificios();
             PrepararConstruccionesDeEdificios();
             ActualizarDepositosDeComida(); //V4 Nuevo
+            ActualizarPuntosRevolucionarios(); //v4 Nuevo
         }
         if (Time.time > relojProximoSegundo)
         {
@@ -150,6 +161,12 @@ public class globalVariables : MonoBehaviour
                 horaActual = 0;
                 diaActual++;
             }
+
+            if(promedioDescontento > 50)
+            {
+                Debug.Log("REVOLUCION");
+            }
+
 
             if(horaActual == 3 && minutoActual == 0)
             {
@@ -453,5 +470,37 @@ public class globalVariables : MonoBehaviour
             }
         }
         return depositosOrdenados;
+    }
+
+    void ActualizarPuntosRevolucionarios()
+    {
+        List<GameObject> sujetos = new List<GameObject>(GameObject.FindGameObjectsWithTag("sujeto"));
+        int descontetoAcumulado = 0;
+        foreach (GameObject sujeto in sujetos)
+        {
+            descontetoAcumulado += sujeto.GetComponent<Follower>().ObtenerPorcentajeDescontento();
+        }
+        promedioDescontento = descontetoAcumulado / sujetos.Count;
+
+        if(promedioDescontento > 50)
+        {
+            foreach (GameObject sujeto in sujetos)
+            {
+                forzarRevolucion = true;
+                sujeto.GetComponent<Follower>().ActivarProcesoRevolucionario();
+            }
+        }
+
+        /// <summary> Si estamos en proceso revolucionario y el descontento cae retorcedemos y cancelamso</summary>
+        if(forzarRevolucion)
+        {
+            if(promedioDescontento < 50)
+            {
+                foreach (GameObject sujeto in sujetos)
+                {
+                    sujeto.GetComponent<Follower>().DesactivarProcesoRevolucionario();
+                }
+            }
+        }
     }
 }
