@@ -58,6 +58,11 @@ namespace Pathfinding {
 			targetV3 = Vector3.zero;
 		}
 
+		public void SetDestination(Transform target, float randomOffsetMax){
+			targetTransform = null;
+			targetV3 = new Vector3(target.position.x + Random.Range(-randomOffsetMax, randomOffsetMax), target.position.y + Random.Range(-randomOffsetMax, randomOffsetMax), target.position.z);
+		}
+
 		public void ClearDestination(){
 			targetTransform = null;
 			targetV3 = Vector3.zero;

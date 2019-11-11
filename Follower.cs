@@ -1255,7 +1255,7 @@ public class Follower : MonoBehaviour {
             if(nuevoEstado == Estado.SIGUIENDO){
                 an.SetTrigger("caminando");
                 aiP.canSearch = true;
-                gds.SetDestination(persona);
+                gds.SetDestination(persona, 15);
                 gds.SetDistanciaObjetivo(30 + 10 * persona.GetComponent<Seguido>().GetNumSeguidores() / 10);
             }
 
