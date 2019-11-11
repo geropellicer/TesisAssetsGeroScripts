@@ -81,6 +81,9 @@ public class globalVariables : MonoBehaviour
     [SerializeField]
     public GameObject[] markersLimites;
 
+    public GameObject[] totems;
+    public GameObject totemMilitar, totemLider, totemEntretenimiento, totemIndividualista;
+
     // Start is called before the first frame update
     void Start() {
         nextActionTime = 0f;
@@ -126,6 +129,27 @@ public class globalVariables : MonoBehaviour
 
         } else{
             Debug.LogError("No hay un objeto piso asignado");
+        }
+
+        totems = GameObject.FindGameObjectsWithTag("totem");
+        foreach (GameObject totem in totems)
+        {
+            if(totem.GetComponent<totem>().ObtenerTipoTotem() == TIPOTOTEM.PRIVADOCOMERCIAL)
+            {
+                totemIndividualista = totem;
+            }
+            if(totem.GetComponent<totem>().ObtenerTipoTotem() == TIPOTOTEM.PRIVADOENTRETENIMIENTO)
+            {
+                totemEntretenimiento = totem;
+            }
+            if(totem.GetComponent<totem>().ObtenerTipoTotem() == TIPOTOTEM.PUBLICOESTATAL)
+            {
+                totemLider = totem;
+            }
+            if(totem.GetComponent<totem>().ObtenerTipoTotem() == TIPOTOTEM.PUBLICOMILITAR)
+            {
+                totemMilitar = totem;
+            }
         }
     }
 
@@ -475,6 +499,13 @@ public class globalVariables : MonoBehaviour
     void ActualizarPuntosRevolucionarios()
     {
         List<GameObject> sujetos = new List<GameObject>(GameObject.FindGameObjectsWithTag("sujeto"));
+
+        if(sujetos.Count < 1)
+        {
+            ReiniciarEscena();
+        }
+
+
         int descontetoAcumulado = 0;
         foreach (GameObject sujeto in sujetos)
         {
@@ -502,5 +533,10 @@ public class globalVariables : MonoBehaviour
                 }
             }
         }
+    }
+
+    void ReiniciarEscena()
+    {
+        //TODO: oscurecer la escena lentamente y luego recargarla
     }
 }

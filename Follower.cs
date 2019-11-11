@@ -368,6 +368,9 @@ public class Follower : MonoBehaviour {
     /// <summary> El vector3 que va acontener el punto al cual debemos dirigirnos para evacuar la obra </summary>
     Vector3 posSalidaElegida;
 
+    /// <summary> Si tenemos alguna emocion, este booleano devuelve si la antena correspondiente
+    /// a la emocion está transmitiendo o no </summary>
+    bool antenaDeEmocionEstaTransmitiendo;
 
 
     // FIN VARIABLES
@@ -466,7 +469,13 @@ public class Follower : MonoBehaviour {
         DecidirSentimientos();
         if(!forzarRevolucion)
         {
-            DecidirQueHacer();
+            if( emocionActual == EMOCION.NADA || (emocionActual != EMOCION.NADA && nivelEmocionActual > 1500 && antenaDeEmocionEstaTransmitiendo )
+            {
+                DecidirQueHacer();
+            } else if(nivelEmocionActual > 1500 && !antenaDeEmocionEstaTransmitiendo)
+            {
+                AdministrarPrenderAntenas();
+            }
         } else if(forzarRevolucion)
         {
             DecidirQueHacerRevolucion();
@@ -517,6 +526,9 @@ public class Follower : MonoBehaviour {
 
         if (Time.time > nextActionTime)
         {
+
+            AcualizarAntenaDeEmocionEstaTransmitiendo();
+
             if(efectoPrivadoComercial > 0)
             {
                 efectoPrivadoComercial--;
@@ -1444,6 +1456,54 @@ public class Follower : MonoBehaviour {
         }
     }
 
+    void AcualizarAntenaDeEmocionEstaTransmitiendo()
+    {
+        if(emocionActual == EMOCION.AMORALLIDER)
+        {
+            if(gV.totemLider.GetComponent<totem>().ObtenerEstaTransmitiendo())
+            {
+                antenaDeEmocionEstaTransmitiendo = true;
+            }
+            else
+            {
+                antenaDeEmocionEstaTransmitiendo = false;
+            }
+        }
+        if(emocionActual == EMOCION.BOLUDEAR)
+        {
+             if(gV.totemEntretenimiento.GetComponent<totem>().ObtenerEstaTransmitiendo())
+            {
+                antenaDeEmocionEstaTransmitiendo = true;
+            }
+            else
+            {
+                antenaDeEmocionEstaTransmitiendo = false;
+            }
+        }
+        if(emocionActual == EMOCION.HACERGUERRA)
+        {
+             if(gV.totemMilitar.GetComponent<totem>().ObtenerEstaTransmitiendo())
+            {
+                antenaDeEmocionEstaTransmitiendo = true;
+            }
+            else
+            {
+                antenaDeEmocionEstaTransmitiendo = false;
+            }
+        }
+        if(emocionActual == EMOCION.INDIVIDUALISTA)
+        {
+             if(gV.totemIndividualista.GetComponent<totem>().ObtenerEstaTransmitiendo())
+            {
+                antenaDeEmocionEstaTransmitiendo = true;
+            }
+            else
+            {
+                antenaDeEmocionEstaTransmitiendo = false;
+            }
+        }
+    }
+
 
 
     // Accedidas desde ONDAS
@@ -1674,7 +1734,7 @@ public class Follower : MonoBehaviour {
         {
             if(estadoRevolucionActual == REVOLUCION.BUSCANDOANTENA)
             {
-                GameObject[] totemsEnEscena = GameObject.FindGameObjectsWithTag("totem");
+                GameObject[] totemsEnEscena = gV.totems;
                 if(totemsEnEscena.Length > 0)
                 {
                     int randomIndex = Random.Range(0, depositosDeComidaCercanos.Count - 1);
@@ -1775,6 +1835,20 @@ public class Follower : MonoBehaviour {
             }
         }
         
+    }
+
+    void AdministrarPrenderAntenas()
+    {
+        gds.SetDestination(totemSeleccionado.transform);
+        gds.SetDistanciaObjetivo(23);
+
+        if(aiP.reachedDestination)
+        {
+            intencionDeApagarAntena = true;
+        }
+
+        // De este estado deberia salir solo porque desde el update cuando invoque a totemEmocionActualEstaPrendido()
+        // y vea que está prendido debería dejar de ingresar aca
     }
 }
 
