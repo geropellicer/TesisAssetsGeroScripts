@@ -75,6 +75,12 @@ public class totem : MonoBehaviour
         WEBCAM2
     }
     public WEBCAM webcamTrackeando;
+
+    int valorPrendido = 0;
+    public int ObtenerValorPrendido()
+    {
+        return valorPrendido;
+    }
   
     // Start is called before the first frame update
     void Start()
@@ -244,5 +250,52 @@ public class totem : MonoBehaviour
         message2.address = "/ApagarTotem/Sonido";
         message2.values.Add(0);
         osc.Send(message2);
+    }
+
+
+    /// <summary>
+    /// Sent each frame where another object is within a trigger collider
+    /// attached to this object (2D physics only).
+    /// </summary>
+    /// <param name="other">The other Collider2D involved in this collision.</param>
+    void OnTriggerStay2D(Collider2D other)
+    {
+        // TODO: en el follower debe
+        // Si es un sujeto que tiene intencion de apagar una antena y tiene seleccionada justo esta antena
+        if(other.tag == "sujeto" && other.GetComponent<Follower>().IntencionDeApagarAntena() &&
+            GameObject.ReferenceEquals(other.GetComponent<Follower>().TotemSeleccionado(), gameObject))
+        {
+            if(transmitiendo)
+            {
+                if(valorPrendido > 0)
+                {
+                    valorPrendido--;
+                } else {
+                    ApagarTotemDesdeUnity();
+                }
+            } 
+        } else if(other.tag == "sujeto" && other.GetComponent<Follower>().IntencionDePrenderAntena() &&
+            GameObject.ReferenceEquals(other.GetComponent<Follower>().TotemSeleccionado(), gameObject))
+        {
+            if(!transmitiendo)
+            {
+                if(valorPrendido < 100)
+                {
+                    valorPrendido++;
+                } else {
+                    PrenderTotemDesdeUnity();
+                }
+            } 
+        }
+    }
+
+    void ApagarTotemDesdeUnity()
+    {
+
+    }
+
+    void PrenderTotemDesdeUnity()
+    {
+        
     }
 }

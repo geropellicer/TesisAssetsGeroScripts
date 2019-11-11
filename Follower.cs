@@ -343,6 +343,12 @@ public class Follower : MonoBehaviour {
     /// <summary> El totem que hemos elegido para ir a apagar en caso de revlucion </summary>
     [SerializeField]
     GameObject totemSeleccionado;
+    /// <summary> Devolvemos al exterior el totem que hemos elegido para ir a apagar en caso de revlucion </summary>
+    [SerializeField]
+    public GameObject TotemSeleccionado()
+    {
+        return totemSeleccionado;
+    }
     /// <summary> Almacenamos el prefab del incendio para instnaicarlo si es incendiario en proceso revolucionario </summary>
     [SerializeField]
     GameObject prefabIncendio;
@@ -365,6 +371,18 @@ public class Follower : MonoBehaviour {
         return intencionDeApagarAntena;
     }
 
+    /// <summary> Cuando queremos prender una antena prendemos esto para que al ser detectado por la antena,
+    /// esta empiece a sumar en su cuenta atrás de prendido (si el totem selccionado coincide, para evitar predner
+    /// a la pasada otra antena que no es el target) </summary>
+    [SerializeField]
+    bool intencionDePrenderAntena;
+    /// <summary> Devuelve al exterior la intencion de apagar o no la antena </summary>
+    public bool IntencionDePrenderAntena()
+    {
+        return intencionDePrenderAntena;
+    }
+
+    
     /// <summary> El vector3 que va acontener el punto al cual debemos dirigirnos para evacuar la obra </summary>
     Vector3 posSalidaElegida;
 
@@ -469,7 +487,7 @@ public class Follower : MonoBehaviour {
         DecidirSentimientos();
         if(!forzarRevolucion)
         {
-            if( emocionActual == EMOCION.NADA || (emocionActual != EMOCION.NADA && nivelEmocionActual > 1500 && antenaDeEmocionEstaTransmitiendo )
+            if( emocionActual == EMOCION.NADA || (emocionActual != EMOCION.NADA && nivelEmocionActual > 1500 && antenaDeEmocionEstaTransmitiendo)
             {
                 DecidirQueHacer();
             } else if(nivelEmocionActual > 1500 && !antenaDeEmocionEstaTransmitiendo)
