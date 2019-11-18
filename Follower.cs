@@ -487,7 +487,10 @@ public class Follower : MonoBehaviour {
         DecidirSentimientos();
         if(!forzarRevolucion)
         {
-            if( emocionActual == EMOCION.NADA || (emocionActual != EMOCION.NADA && nivelEmocionActual > 1500 && antenaDeEmocionEstaTransmitiendo)
+            // Si no setimos nada decdimos que hacer normalmente
+            // Si setnimos algo con mucha intensisdad y esa antena está prendida, también
+            // En cabmio si sentimos alg con mucha intensidad y se apaga la antena, vamos a intentar prenderla
+            if( emocionActual == EMOCION.NADA || (emocionActual != EMOCION.NADA && nivelEmocionActual > 1500 && antenaDeEmocionEstaTransmitiendo))
             {
                 DecidirQueHacer();
             } else if(nivelEmocionActual > 1500 && !antenaDeEmocionEstaTransmitiendo)
@@ -721,7 +724,6 @@ public class Follower : MonoBehaviour {
                     if(!forzarBoludear)
                     {
                         CambiarEstado(Estado.SIGUIENDO);
-                        an.SetTrigger("caminando");
                     }
                 }
             } 
@@ -738,8 +740,9 @@ public class Follower : MonoBehaviour {
             }
         } else if(estado == Estado.SIGUIENDO) {
             Debug.Log("siguiendo");
-            // Obtenemos el estado del persona y si se paro switcheamos aca a trabajando
+            // Obtenemos el estado del persona y si se paro switcheamos aca a trabajand
             if(persona != null){
+                
                 if(PersonaEstaParada() && aiP.reachedDestination){
                     if(!forzarBoludear && !forzarIndividualista)
                     {
@@ -749,6 +752,10 @@ public class Follower : MonoBehaviour {
                     {
                         CambiarEstado(Estado.IDLE);
                         an.SetTrigger("idle");
+                    }
+                } else if(!PersonaEstaParada() && !aiP.reachedDestination) {
+                    if(!aiP.pathPending){
+                        an.SetTrigger("caminando");
                     }
                 }
                 if (forzarIndividualista) {
@@ -1075,7 +1082,10 @@ public class Follower : MonoBehaviour {
                 {
                     int index = 0;
                     depositosDeComidaSeleccionado = depositosDeComidaCercanos[index];
-                    posLugarDeTrabajo = depositosDeComidaSeleccionado.transform.position;
+                    if(depositosDeComidaSeleccionado != null){
+                        //Hacemos este chequeo extra porque porla demora en actualizar los depositos puede ser que intente ir a una ya destruido
+                        posLugarDeTrabajo = depositosDeComidaSeleccionado.transform.position;
+                    }
                 } else
                 {
                     esperandoDeposito = true;
@@ -1095,7 +1105,6 @@ public class Follower : MonoBehaviour {
                 gds.SetDistanciaObjetivo(20);
                 subEstadoActualTrabajando = TRABAJANDO.caminandoAlTrabajo;
                 aiP.canSearch = true;
-                an.SetTrigger("caminandoPico");
                 float vel = SetVelocidadRandom();
                 ActualizarVelAn(vel);
                 aiP.maxSpeed = vel;
@@ -1108,6 +1117,10 @@ public class Follower : MonoBehaviour {
                 Debug.LogWarning("Error: Se intenta ir a un lugar de trabajo no inicializado");
                 subEstadoActualTrabajando = TRABAJANDO.buscandoTrabajo;
                 return;
+            }
+
+            if(!aiP.pathPending){
+                an.SetTrigger("caminandoPico");
             }
 
             if(emocionActual == EMOCION.BOLUDEAR)
@@ -1360,6 +1373,7 @@ public class Follower : MonoBehaviour {
         if(estado != nuevoEstado) {
             if(nuevoEstado == Estado.TRABAJANDO){
                 subEstadoActualTrabajando = TRABAJANDO.buscandoTrabajo;
+                an.SetTrigger("idle");
                 aiP.canSearch = false;
                 //gds.ClearDestination();
             }
