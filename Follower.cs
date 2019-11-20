@@ -480,6 +480,8 @@ public class Follower : MonoBehaviour {
         persona = null;
 
         CambiarModoAlimentacion(false);
+
+        gV.SumarPoblacion();
     }
 
     /// <summary>Todos los frames evaluamos que hacer dependiendo el estado y los eventos</summary>
@@ -739,7 +741,6 @@ public class Follower : MonoBehaviour {
                 ManejarForzarMilitar();
             }
         } else if(estado == Estado.SIGUIENDO) {
-            Debug.Log("siguiendo");
             // Obtenemos el estado del persona y si se paro switcheamos aca a trabajand
             if(persona != null){
                 
@@ -1486,6 +1487,8 @@ public class Follower : MonoBehaviour {
             }
             Destroy(gameObject);
         }
+
+        gV.RestarPoblacion();
     }
 
     void AcualizarAntenaDeEmocionEstaTransmitiendo()

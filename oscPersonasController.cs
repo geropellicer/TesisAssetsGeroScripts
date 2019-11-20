@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class oscPersonasController : MonoBehaviour
+public class OscPersonasController : MonoBehaviour
 {
-    public GameObject persona;
+    public GameObject prePersonPrefab;
     OSC osc;
     globalVariables gV;
 
@@ -26,15 +26,15 @@ public class oscPersonasController : MonoBehaviour
 
     void CrearPersona1(OscMessage m)
     {
-        GameObject p = Instantiate(persona, new Vector3(-40, 0, -0.1f), Quaternion.identity);
+        Debug.Log("Sucediendo 1");
+        GameObject p = Instantiate(prePersonPrefab, new Vector3(0, 0, -0.1f), Quaternion.identity);
         p.GetComponent<persona>().Configurar(osc, Mathf.RoundToInt(m.GetInt(0)), 1);
-        gV.AgregarPersona(p);
     }
 
     void CrearPersona2(OscMessage m)
     {
-        GameObject p = Instantiate(persona, new Vector3(-40, 0, -0.1f), Quaternion.identity);
+        Debug.Log("Sucediendo 2");
+        GameObject p = Instantiate(prePersonPrefab, new Vector3(0, 0, -0.1f), Quaternion.identity);
         p.GetComponent<persona>().Configurar(osc, Mathf.RoundToInt(m.GetInt(0)), 2);
-        gV.AgregarPersona(p);
     }
 }
