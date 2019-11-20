@@ -66,13 +66,6 @@ public class guardarYReiniciar : MonoBehaviour
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
-    public void ActualizarCalibradoPersonas()
-    {
-        foreach(GameObject p in GameObject.FindGameObjectsWithTag("persona")){
-            p.GetComponent<persona>().ActualizarCalibrado();
-        }
-    }
-
     public void CargarTodo()
     {
         //CargarCamara1();
