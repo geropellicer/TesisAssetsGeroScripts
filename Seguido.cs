@@ -48,7 +48,7 @@ public class Seguido : MonoBehaviour {
 
     /// <summary> Listado privado de comidas que va expropiando. De afuera se accede por los metodos de abajo </summary>
     [SerializeField]
-    private List<GameObject> comidas;
+    public List<GameObject> comidas;
 
     /// <summary> Devuelve una comida no nula al azar </summary>
     public GameObject ObtenerComidaDisponible()
