@@ -45,8 +45,9 @@ public class globalVariables : MonoBehaviour
     [SerializeField]
     public GameObject[] markersLimites;
 
-    public GameObject[] totems;
     public GameObject totemMilitar, totemLider, totemEntretenimiento, totemIndividualista;
+
+    public GameObject oscurecer1, oscurecer2;
 
     // Start is called before the first frame update
     void Start()
@@ -84,26 +85,6 @@ public class globalVariables : MonoBehaviour
             Debug.LogError("No hay un objeto piso asignado");
         }
 
-        totems = GameObject.FindGameObjectsWithTag("totem");
-        foreach (GameObject totem in totems)
-        {
-            if (totem.GetComponent<totem>().ObtenerTipoTotem() == TIPOTOTEM.PRIVADOCOMERCIAL)
-            {
-                totemIndividualista = totem;
-            }
-            if (totem.GetComponent<totem>().ObtenerTipoTotem() == TIPOTOTEM.PRIVADOENTRETENIMIENTO)
-            {
-                totemEntretenimiento = totem;
-            }
-            if (totem.GetComponent<totem>().ObtenerTipoTotem() == TIPOTOTEM.PUBLICOESTATAL)
-            {
-                totemLider = totem;
-            }
-            if (totem.GetComponent<totem>().ObtenerTipoTotem() == TIPOTOTEM.PUBLICOMILITAR)
-            {
-                totemMilitar = totem;
-            }
-        }
     }
 
     // Update is called once per frame
