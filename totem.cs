@@ -208,11 +208,41 @@ public class totem : MonoBehaviour
 
     void ApagarTotemDesdeUnity()
     {
+        int numAntena = 0;
+        if(tipoEsteTotem == TIPOTOTEM.PUBLICOMILITAR)
+        {
+            numAntena = 1;
+        } else if(tipoEsteTotem == TIPOTOTEM.PRIVADOCOMERCIAL)
+        {
+            numAntena = 2;
+        } else if(tipoEsteTotem == TIPOTOTEM.PUBLICOESTATAL)
+        {
+            numAntena = 3;
+        } else if(tipoEsteTotem == TIPOTOTEM.PRIVADOENTRETENIMIENTO)
+        {
+            numAntena = 4;
+        }
 
+        gV.oscAntenasController.EnviarApagarAntenaDesdeUnity(numAntena);
     }
 
     void PrenderTotemDesdeUnity()
     {
-        
+        int numAntena = 0;
+        if(tipoEsteTotem == TIPOTOTEM.PUBLICOMILITAR)
+        {
+            numAntena = 1;
+        } else if(tipoEsteTotem == TIPOTOTEM.PRIVADOCOMERCIAL)
+        {
+            numAntena = 2;
+        } else if(tipoEsteTotem == TIPOTOTEM.PUBLICOESTATAL)
+        {
+            numAntena = 3;
+        } else if(tipoEsteTotem == TIPOTOTEM.PRIVADOENTRETENIMIENTO)
+        {
+            numAntena = 4;
+        }
+
+        gV.oscAntenasController.EnviarPrenderAntenaDesdeUnity(numAntena);
     }
 }

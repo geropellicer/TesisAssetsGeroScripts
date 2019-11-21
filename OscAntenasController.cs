@@ -200,4 +200,49 @@ public class OscAntenasController : MonoBehaviour
     }
 
 
+    public void  EnviarPrenderAntenaDesdeUnity(int numAntena)
+    {
+        OscMessage message = new OscMessage();
+        message.address = "";
+        if(numAntena == 1)
+        {
+            message.address = "/Antena1/Prender/";
+        } else if(numAntena == 2)
+        {
+            message.address = "/Antena2/Prender/";
+        } else if(numAntena == 3)
+        {
+            message.address = "/Antena3/Prender/";
+        } else if(numAntena == 4)
+        {
+            message.address = "/Antena4/Prender/";
+        }
+
+        message.values.Add(1);
+        osc.Send(message);
+    }
+
+    public void  EnviarApagarAntenaDesdeUnity(int numAntena)
+    {
+        OscMessage message = new OscMessage();
+        message.address = "";
+        if(numAntena == 1)
+        {
+            message.address = "/Antena1/Apagar/";
+        } else if(numAntena == 2)
+        {
+            message.address = "/Antena2/Apagar/";
+        } else if(numAntena == 3)
+        {
+            message.address = "/Antena3/Apagar/";
+        } else if(numAntena == 4)
+        {
+            message.address = "/Antena4/Apagar/";
+        }
+
+        message.values.Add(0);
+        osc.Send(message);
+    }
+
+
 }

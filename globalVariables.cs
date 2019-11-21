@@ -49,6 +49,8 @@ public class globalVariables : MonoBehaviour
 
     public GameObject oscurecer1, oscurecer2;
 
+    public OscAntenasController oscAntenasController;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -68,6 +70,8 @@ public class globalVariables : MonoBehaviour
 
         sp = GetComponent<spawner>();
         //son = GameObject.Find("Sonido").GetComponent<sonido>();
+
+        oscAntenasController = GameObject.Find("OSC Manger").GetComponent<OscAntenasController>();
 
 
         if (piso != null)
