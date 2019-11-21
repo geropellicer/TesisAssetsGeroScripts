@@ -492,7 +492,7 @@ public class Follower : MonoBehaviour
 
         CambiarModoAlimentacion(false);
 
-        gV.SumarPoblacion();
+        gV.SumarPoblacion(gameObject);
     }
 
     /// <summary>Todos los frames evaluamos que hacer dependiendo el estado y los eventos</summary>
@@ -1606,7 +1606,7 @@ public class Follower : MonoBehaviour
             Destroy(gameObject);
         }
 
-        gV.RestarPoblacion();
+        gV.RestarPoblacion(gameObject);
     }
 
     void AcualizarAntenaDeEmocionEstaTransmitiendo()

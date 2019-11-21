@@ -25,6 +25,10 @@ public class globalVariables : MonoBehaviour
     [SerializeField]
     List<GameObject> listaDePersonas;
 
+    
+    [SerializeField]
+    List<GameObject> listaDeSujetos;
+
     [SerializeField]
     int poblacionActual;
 
@@ -51,6 +55,14 @@ public class globalVariables : MonoBehaviour
 
     public OscAntenasController oscAntenasController;
 
+    /// <summary> Cantidad minima de bichos que tenemos cuando no hay personas en la proyeccion </summary>
+    [SerializeField]
+    int cantidadMinimaBichosReposo;
+
+    /// <summary> Cantidad maxima de bichos que tenemos cuando no hay personas en la proyeccion</summary>
+    [SerializeField]
+    int cantidadMaximaBichosReposo;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -58,6 +70,7 @@ public class globalVariables : MonoBehaviour
         intervalo = 5f;
 
         listaDePersonas = new List<GameObject>();
+        listaDeSujetos = new List<GameObject>();
 
         relojProximoSegundo = 0f;
         relojSegundo = 1f;
@@ -100,6 +113,7 @@ public class globalVariables : MonoBehaviour
             nextActionTime = Time.time + intervalo;
             ActualizarDepositosDeComida(); //V4 Nuevo
             ActualizarPuntosRevolucionarios(); //v4 Nuevo
+            ControlarPoblacion();
         }
         if (Time.time > relojProximoSegundo)
         {
@@ -141,14 +155,30 @@ public class globalVariables : MonoBehaviour
     }
 
 
-    public void SumarPoblacion()
+    public void SumarPoblacion(GameObject sujeto)
     {
-        poblacionActual++;
+        if (!listaDeSujetos.Contains(sujeto))
+        {
+            listaDePersonas.Add(sujeto);
+            poblacionActual++;
+        }
+        else
+        {
+            Debug.Log("intentando agregar un sujeto que ya esta en el listado.");
+        }
     }
 
-    public void RestarPoblacion()
+    public void RestarPoblacion(GameObject sujeto)
     {
-        poblacionActual--;
+        if (listaDeSujetos.Contains(sujeto))
+        {
+            listaDeSujetos.Remove(sujeto);
+            poblacionActual--;
+        }
+        else
+        {
+            Debug.Log("ERROR: intentando eliminar un sujeto que no existe en el listado.");
+        }
     }
 
     public int GetPoblacionActual()
@@ -164,7 +194,7 @@ public class globalVariables : MonoBehaviour
         }
         else
         {
-            //Debug.Log("intentando agregar una persona que ya esta en el listado.");
+            Debug.Log("intentando agregar una persona que ya esta en el listado.");
         }
     }
 
@@ -176,7 +206,7 @@ public class globalVariables : MonoBehaviour
         }
         else
         {
-            Debug.LogError("ERROR: intentando eliminar una persona qu eno existe en el listado.");
+            Debug.Log("ERROR: intentando eliminar una persona qu eno existe en el listado.");
         }
     }
 
@@ -244,24 +274,22 @@ public class globalVariables : MonoBehaviour
 
     void ActualizarPuntosRevolucionarios()
     {
-        List<GameObject> sujetos = new List<GameObject>(GameObject.FindGameObjectsWithTag("sujeto"));
-
-        if (sujetos.Count < 1)
+        if (poblacionActual < 1)
         {
             ReiniciarEscena();
         }
 
 
         int descontetoAcumulado = 0;
-        foreach (GameObject sujeto in sujetos)
+        foreach (GameObject sujeto in listaDeSujetos)
         {
             descontetoAcumulado += sujeto.GetComponent<Follower>().ObtenerPorcentajeDescontento();
         }
-        promedioDescontento = descontetoAcumulado / sujetos.Count;
+        promedioDescontento = descontetoAcumulado / listaDeSujetos.Count;
 
         if (promedioDescontento > 50)
         {
-            foreach (GameObject sujeto in sujetos)
+            foreach (GameObject sujeto in listaDeSujetos)
             {
                 forzarRevolucion = true;
                 sujeto.GetComponent<Follower>().ActivarProcesoRevolucionario();
@@ -273,9 +301,45 @@ public class globalVariables : MonoBehaviour
         {
             if (promedioDescontento < 50)
             {
-                foreach (GameObject sujeto in sujetos)
+                foreach (GameObject sujeto in listaDeSujetos)
                 {
                     sujeto.GetComponent<Follower>().DesactivarProcesoRevolucionario();
+                }
+            }
+        }
+    }
+
+
+    void ControlarPoblacion()
+    {
+        // Si hay personas ejercemos un control mas sutil.
+        if(listaDePersonas.Count > 0)
+        {
+            if(promedioDescontento >= 40)
+            {
+                // No hacemos nada porque es posible que se active el modo revolucionario en cualquier momento
+            } else if( promedioDescontento < 40)
+            {   
+                // EN principio en este caso solo agregamos un bicho cada 5 segundos, para que el flow dependa mas de lo que pasa en la escena
+                // Adicionalmente podriamos manejar algo similar o igual a cuando no hay personas.
+                if(poblacionActual < cantidadMinimaBichosReposo)
+                {
+                    GameObject.Instantiate(prefabBicho, Utilidades.PuntoRandom(piso), Quaternion.identity);
+                }
+            }
+        }
+
+        // Si no hay personas vamos inyectando personas para que siempre se mantenga entre el minimo y el maximo
+        if(listaDePersonas.Count == 0){
+            if(poblacionActual < cantidadMinimaBichosReposo)
+            {
+                // Spawneamos la cantidad necesaria para llegar a un promedio entre el minimo y el maximo
+                // Por ejemplo si el minimo es 5 y el maximo es 10 y tenemos 2:
+                // Espawenamos ((5-2) + (10-2)) / 2 = 5.5;
+                int cantidadASpawnear = Mathf.FloorToInt(((cantidadMinimaBichosReposo - poblacionActual) + (cantidadMaximaBichosReposo - poblacionActual)) / 2);
+                for(int i = 0; i < cantidadASpawnear; i++)
+                {
+                    GameObject.Instantiate(prefabBicho, Utilidades.PuntoRandom(piso), Quaternion.identity);
                 }
             }
         }

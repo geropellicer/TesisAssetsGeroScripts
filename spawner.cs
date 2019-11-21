@@ -11,10 +11,6 @@ public class spawner : MonoBehaviour
     globalVariables gV;
     public GameObject prefabComida;
 
-    public GameObject prefabSoviet;
-    public GameObject prefabFabrica;
-    public GameObject prefabAlmacen;
-    public GameObject prefabTocon;
     public GameObject prefabArbusto;
 
     public float velocidadDelTiempo;
