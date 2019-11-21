@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class globalVariables : MonoBehaviour
 {
@@ -345,8 +346,15 @@ public class globalVariables : MonoBehaviour
         }
     }
 
+    
+    public void OscurecidoTerminado()
+    {
+         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
     void ReiniciarEscena()
     {
-        //TODO: oscurecer la escena lentamente y luego recargarla
+        oscurecer1.GetComponent<Desoscurecer>().Oscurecer(gameObject);
+        oscurecer2.GetComponent<Desoscurecer>().Oscurecer(gameObject);
     }
 }

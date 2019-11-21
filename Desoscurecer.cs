@@ -14,6 +14,8 @@ public class Desoscurecer : MonoBehaviour
     [SerializeField]
     bool oscurecer = false;
 
+    GameObject gV;
+
     void Start()
     {
         im = GetComponent<Image>();
@@ -39,8 +41,15 @@ public class Desoscurecer : MonoBehaviour
         }
     }
 
-    public void Oscurecer()
+    public void Oscurecer(GameObject caller)
     {
+        gV = caller;
         oscurecer = true;
+    }
+
+    /// <summary> Callback que enviamos cuando se termino de oscurecer la escena, usada en globalVariables para reiniciar </summary>
+    void Oscurecido()
+    {
+        gV.GetComponent<globalVariables>().OscurecidoTerminado();
     }
 }
