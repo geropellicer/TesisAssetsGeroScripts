@@ -327,6 +327,11 @@ public class Follower : MonoBehaviour
     [SerializeField]
     bool forzarRevolucion;
 
+    public bool GetForzarRevolucion()
+    {
+        return forzarRevolucion;
+    }
+
     /// <summary> Posibles estados del proceso revolucionario, en la funcion DecidirQueHaceRevolucion() se explican </summary>
     public enum REVOLUCION
     {
