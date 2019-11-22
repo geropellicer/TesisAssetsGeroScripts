@@ -848,58 +848,62 @@ public class Follower : MonoBehaviour
     /// Si es con otro sujeto: de la misma persona, ignoramos. De otra persona, maneja quien tiene persona con mas seguidores.</summary>
     void OnTriggerEnter2D(Collider2D other)
     {
-        /*if(other.gameObject.tag == "persona"){
-            if(persona == null || GameObject.ReferenceEquals(persona, other.gameObject)){
-                ManejarColisionesConPersona(other);
-            }
-        }*/
-        // Arreglo: si nuestra persona es null y si nuestra persona no es la misma que con la que estamos chocando
-        // (antes estaba o si es la misma) 
-        if (other.gameObject.tag == "persona")
+        // Solo manejamos triggers con personas u otros sujetos si no estamos en momentos revolucionarios
+        if(!forzarRevolucion)
         {
-            if (persona == null)
-            {
-                // Si mi persona es null soy huerfano. Solo llamo a manejar la colision si enre los seguidores de
-                // la persona con la que me estoy chocando no hay al menos 10 nacionalistas
-                if (other.gameObject.GetComponent<Seguido>().ContarFollowersNacionalistas() < 10)
-                {
-                    ManejarColisionesHuerfanoConPersona(other);
+            /*if(other.gameObject.tag == "persona"){
+                if(persona == null || GameObject.ReferenceEquals(persona, other.gameObject)){
+                    ManejarColisionesConPersona(other);
                 }
-            }
-        }
-        if (other.gameObject.tag == "sujeto")
-        {
-            // Si somos huerfanos, no hacemos nada cuando nos encontramos con otro sujeto. Solo si nos encontramos con una person (arriba).
-            // Pero no cuando nos encontramos con otro sujeto porque en caso de que el otro sea huerfano no pasa ninguna interaccion
-            // y en caso de que el otro no lo sea se manejara en el otro (abajo)
-            if (persona != null)
+            }*/
+            // Arreglo: si nuestra persona es null y si nuestra persona no es la misma que con la que estamos chocando
+            // (antes estaba o si es la misma) 
+            if (other.gameObject.tag == "persona")
             {
-                // Si el otro sujeto no tiene persona, es huerfano, manejamos aca
-                if (other.gameObject.GetComponent<Follower>().persona == null)
+                if (persona == null)
                 {
-                    if (!forzarNacionalismo)
+                    // Si mi persona es null soy huerfano. Solo llamo a manejar la colision si enre los seguidores de
+                    // la persona con la que me estoy chocando no hay al menos 10 nacionalistas
+                    if (other.gameObject.GetComponent<Seguido>().ContarFollowersNacionalistas() < 10)
                     {
-                        ManejarColisionesConSujetoHuerfano(other);
+                        ManejarColisionesHuerfanoConPersona(other);
                     }
                 }
-                else if (persona.GetComponent<Seguido>().GetNumSeguidores() > other.gameObject.GetComponent<Follower>().persona.GetComponent<Seguido>().GetNumSeguidores())
+            }
+            if (other.gameObject.tag == "sujeto")
+            {
+                // Si somos huerfanos, no hacemos nada cuando nos encontramos con otro sujeto. Solo si nos encontramos con una person (arriba).
+                // Pero no cuando nos encontramos con otro sujeto porque en caso de que el otro sea huerfano no pasa ninguna interaccion
+                // y en caso de que el otro no lo sea se manejara en el otro (abajo)
+                if (persona != null)
                 {
-                    // Si el otro sujeto tiene persona y tiene menos seguidores que nosotros, manejamos aca
-                    if (!forzarNacionalismo)
+                    // Si el otro sujeto no tiene persona, es huerfano, manejamos aca
+                    if (other.gameObject.GetComponent<Follower>().persona == null)
                     {
-                        ManejarColisionesConSujeto(other);
-                    }
-                }
-                if (GameObject.Equals(persona, other.gameObject.GetComponent<Follower>().persona))
-                {
-                    // Si las dos personas son la misma, estamos en presencia de un seguidor de nuestro propio grupo.
-                    // Solo actuamos en caso de que haya que contagiar: si sentimos mas emocion que el umbral y si el otro no tiene nuestra emocion
-                    // TODO: deberiamos agregar los niveles de emocion de rebelarse y huir
-                    if (nivelEmocionActual > umbralContagioEmocion)
-                    {
-                        if (emocionActual != other.gameObject.GetComponent<Follower>().ObtenerEmocionActual())
+                        if (!forzarNacionalismo)
                         {
-                            ContagiarEmocion(other.gameObject, emocionActual);
+                            ManejarColisionesConSujetoHuerfano(other);
+                        }
+                    }
+                    else if (persona.GetComponent<Seguido>().GetNumSeguidores() > other.gameObject.GetComponent<Follower>().persona.GetComponent<Seguido>().GetNumSeguidores())
+                    {
+                        // Si el otro sujeto tiene persona y tiene menos seguidores que nosotros, manejamos aca
+                        if (!forzarNacionalismo)
+                        {
+                            ManejarColisionesConSujeto(other);
+                        }
+                    }
+                    if (GameObject.Equals(persona, other.gameObject.GetComponent<Follower>().persona))
+                    {
+                        // Si las dos personas son la misma, estamos en presencia de un seguidor de nuestro propio grupo.
+                        // Solo actuamos en caso de que haya que contagiar: si sentimos mas emocion que el umbral y si el otro no tiene nuestra emocion
+                        // TODO: deberiamos agregar los niveles de emocion de rebelarse y huir
+                        if (nivelEmocionActual > umbralContagioEmocion)
+                        {
+                            if (emocionActual != other.gameObject.GetComponent<Follower>().ObtenerEmocionActual())
+                            {
+                                ContagiarEmocion(other.gameObject, emocionActual);
+                            }
                         }
                     }
                 }
