@@ -144,12 +144,6 @@ public class Follower : MonoBehaviour
     [SerializeField]
     private IDLE subEstadoActualIdle;
 
-    [SerializeField]
-    /// <summary> Guardamos la cantidad de incidencia que tiene una antena particular. </summary>
-    /// <summary> Cada vez que una onda de un totem particular le pega a un bicho, incrementa el efecto de esa antena.</summary>
-    /// <summary> TODO: adicionalmente también deberían aumentar por efecto contagio de otros bichos de la misma persona. </summary>
-
-    //private int efectoPublicoEstatal, efectoPublicoMilitar, efectoPrivadoComercial, efectoPrivadoEntretenimiento;
     /// <summary> Cambio los efectos a booleanos mas simples. El booleano de la emocion que este activado permite que el
     /// nivel de emocion de esa emocion aumente </summary>
     bool publicoEstatal, publicoMilitar, privadoComercial, privadoEntretenimiento;
@@ -902,7 +896,6 @@ public class Follower : MonoBehaviour
                     {
                         // Si las dos personas son la misma, estamos en presencia de un seguidor de nuestro propio grupo.
                         // Solo actuamos en caso de que haya que contagiar: si sentimos mas emocion que el umbral y si el otro no tiene nuestra emocion
-                        // TODO: deberiamos agregar los niveles de emocion de rebelarse y huir
                         if (nivelEmocionActual > umbralContagioEmocion)
                         {
                             if (emocionActual != other.gameObject.GetComponent<Follower>().ObtenerEmocionActual())
@@ -1886,7 +1879,6 @@ public class Follower : MonoBehaviour
                         SeleccionarComidaPropia();
                     }
                     // Si es individualista comemos dos veces por gloton. 
-                    // TODO: habria que implementarlo en el ciclo de comer de la persona.
                 }
             }
         }
