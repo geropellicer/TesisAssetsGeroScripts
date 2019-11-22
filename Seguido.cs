@@ -150,8 +150,10 @@ public class Seguido : MonoBehaviour {
             if(comidas.Count > 0)
             {
                 GameObject comidaComer = comidas[0];
+                //Destroy(comidaComer);
+                // En vez de destruirla hacemos que se coma 
+                comida.GetComponent<ComidaNueva>().ComerPorPersona(gameObject);
                 comidas.Remove(comidaComer);
-                Destroy(comidaComer);
             }
 
             // Instanciamos un objeto invisible con un collider, lo configuramos para que responda a este objeto
