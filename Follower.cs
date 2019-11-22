@@ -401,6 +401,37 @@ public class Follower : MonoBehaviour
     bool antenaDeEmocionEstaTransmitiendo;
 
 
+
+    /// <summary> Los distintos estados posibles de animaciones que usamos en el bicho. </summary>
+    public enum ANIMACION
+    {
+        CAMINANDO,
+        CAMINANDOPICO,
+        CAMINANDOCARTEL,
+        USANDOPICO,
+        IDLE
+    }
+    /// <summary> Almacenamos el estado actual del animator osea que animacion se esta reproduciendo. </summary>
+    [SerializeField]
+    ANIMACION animacionActual = ANIMACION.IDLE;
+
+
+    /// <summary>Umbral para determinar si se esta parado o moviendose</summary>
+    private float noMovementThreshold = 0.001f;
+
+    /// <summary>Cuantos frames tiene que estar dentro del umbral para que se considere quieto</summary>
+    private const int noMovementFrames = 3;
+
+    /// <summary>Buffer de puntos en los que estuvo</summary>
+    Vector3[] previousLocations = new Vector3[noMovementFrames];
+    
+    /// <summary>Alamacenamos si está quieto o no</summary>
+    [SerializeField]
+    private bool  parado = true;
+
+
+
+
     // FIN VARIABLES
     // /////////////////////////////////////////////////////////////////////////
     // /////////////////////////////////////////////////////////////////////////
@@ -493,11 +524,13 @@ public class Follower : MonoBehaviour
         CambiarModoAlimentacion(false);
 
         gV.SumarPoblacion(gameObject);
+        Debug.Log("Onenable: " + gameObject.name );
     }
 
     /// <summary>Todos los frames evaluamos que hacer dependiendo el estado y los eventos</summary>
     void Update()
     {
+        DecidirSiEstaParado();
         DecidirSentimientos();
         if (!forzarRevolucion)
         {
@@ -782,19 +815,19 @@ public class Follower : MonoBehaviour
                     if (!forzarBoludear && !forzarIndividualista)
                     {
                         CambiarEstado(Estado.TRABAJANDO);
-                        an.SetTrigger("idle");
+                        SetAnimacion(ANIMACION.IDLE);
                     }
                     else if (forzarBoludear)
                     {
                         CambiarEstado(Estado.IDLE);
-                        an.SetTrigger("idle");
+                        SetAnimacion(ANIMACION.IDLE);
                     }
                 }
                 else if (!PersonaEstaParada() && !aiP.reachedDestination)
                 {
-                    if (!aiP.pathPending)
+                    if (!aiP.pathPending && !parado)
                     {
-                        an.SetTrigger("caminando");
+                        SetAnimacion(ANIMACION.CAMINANDO);
                     }
                 }
                 if (forzarIndividualista)
@@ -1142,7 +1175,6 @@ public class Follower : MonoBehaviour
             else
             {
                 // Si no tenemos persona vamos al deposito más cercano sin importar la distancia
-                Debug.Log("probando sin persona");
                 ActualizarDepositosDeComidaCercanos(transform.position, 0, false);
                 if (depositosDeComidaCercanos.Count > 0)
                 {
@@ -1189,9 +1221,9 @@ public class Follower : MonoBehaviour
                 return;
             }
 
-            if (!aiP.pathPending)
+            if (!aiP.pathPending && !parado)
             {
-                an.SetTrigger("caminandoPico");
+                SetAnimacion(ANIMACION.CAMINANDOPICO);
             }
 
             if (emocionActual == EMOCION.BOLUDEAR)
@@ -1205,7 +1237,7 @@ public class Follower : MonoBehaviour
             if (aiP.reachedDestination)
             {
                 subEstadoActualTrabajando = TRABAJANDO.trabajando;
-                an.SetTrigger("usandoPico");
+                SetAnimacion(ANIMACION.USANDOPICO);
                 ActualizarVelAn(0);
                 SetTiempoTrabajar();
             }
@@ -1219,7 +1251,7 @@ public class Follower : MonoBehaviour
             if (tiempoActualTrabajar < tiempoTotalTrabajar)
             {
                 tiempoActualTrabajar++;
-                transform.LookAt(posLugarDeTrabajo);
+                LookAt2D(posLugarDeTrabajo);
 
                 if (emocionActual == EMOCION.INDIVIDUALISTA)
                 {
@@ -1234,7 +1266,7 @@ public class Follower : MonoBehaviour
             {
                 tiempoActualTrabajar = 0;
                 // Aca entramos cuando ya termino el trabajo, debemos crear una comida.
-                an.SetTrigger("idle");
+                SetAnimacion(ANIMACION.IDLE);
                 // Creamos la comida, la configuramos y la almacenamos en nuestro array
                 GameObject comidaCreada = null;
                 if (depositosDeComidaSeleccionado != null)
@@ -1361,18 +1393,22 @@ public class Follower : MonoBehaviour
             gds.SetDestination(Utilidades.PuntoRandom(gV.piso, transform.position, 50));
             gds.SetDistanciaObjetivo(15);
             subEstadoActualIdle = IDLE.caminando;
-            an.SetTrigger("caminando");
             ActualizarVelAn(vel);
 
         }
         else if (subEstadoActualIdle == IDLE.caminando)
         {
+            if(!aiP.pathPending && !parado)
+            {
+                SetAnimacion(ANIMACION.CAMINANDO);
+            }
             if (aiP.reachedDestination)
             {
                 subEstadoActualIdle = IDLE.rumiando;
                 ActualizarVelAn(0);
                 SetTiempoRumiar();
-            }
+                SetAnimacion(ANIMACION.IDLE);
+            } 
         }
         else if (subEstadoActualIdle == IDLE.rumiando)
         {
@@ -1469,7 +1505,7 @@ public class Follower : MonoBehaviour
             if (nuevoEstado == Estado.TRABAJANDO)
             {
                 subEstadoActualTrabajando = TRABAJANDO.buscandoTrabajo;
-                an.SetTrigger("idle");
+                SetAnimacion(ANIMACION.IDLE);
                 aiP.canSearch = false;
                 //gds.ClearDestination();
             }
@@ -1481,7 +1517,10 @@ public class Follower : MonoBehaviour
 
             if (nuevoEstado == Estado.SIGUIENDO)
             {
-                an.SetTrigger("caminando");
+                if(!parado)
+                {
+                    SetAnimacion(ANIMACION.CAMINANDO);
+                }
                 aiP.canSearch = true;
                 gds.SetDestination(persona, 15);
                 gds.SetDistanciaObjetivo(30 + 10 * persona.GetComponent<Seguido>().GetNumSeguidores() / 10);
@@ -1657,6 +1696,76 @@ public class Follower : MonoBehaviour
         }
     }
 
+
+    void SetAnimacion(ANIMACION nuevaAnimacion)
+    {
+        // Solo si no estamos en la animacion actual ponemos la nueva, para evitar interrumpir el ciclo de la animacion
+        // reiniciandolo con cada envio
+        if(animacionActual != nuevaAnimacion)
+        {
+            Debug.Log("Llamado cambio de animacion. Nueva: " + nuevaAnimacion + " Actual(Vieja): " + animacionActual);
+            switch(nuevaAnimacion)
+            {
+                case ANIMACION.IDLE:
+                    Debug.Log("Idle");
+                    an.SetTrigger("idle");
+                    break;
+                case ANIMACION.CAMINANDO:
+                    Debug.Log("Caminando");
+                    an.SetTrigger("caminando");
+                    break;
+                case ANIMACION.CAMINANDOPICO:
+                    an.SetTrigger("caminandoPico");
+                    break;
+                case ANIMACION.CAMINANDOCARTEL:
+                    an.SetTrigger("caminandoCartel");
+                    break;
+                case ANIMACION.USANDOPICO:
+                    an.SetTrigger("usandoPico");
+                    break;
+                default:
+                    Debug.Log("Error: animacion no identificada en SetAnimacion()");
+                    break;
+            }
+            animacionActual = nuevaAnimacion;
+        }
+    }
+
+    
+    void LookAt2D(Transform target)
+    {
+        transform.up = target.position - transform.position; 
+    }
+    void LookAt2D(Vector3 target)
+    {
+        transform.up = target - transform.position; 
+    }
+
+
+    void DecidirSiEstaParado(){
+        for(int i = 0; i < previousLocations.Length - 1; i++)
+        {
+            previousLocations[i] = previousLocations[i+1];
+        }
+        previousLocations[previousLocations.Length - 1] = transform.position;
+        
+        //Check the distances between the points in your previous locations
+        //If for the past several updates, there are no movements smaller than the threshold,
+        //you can most likely assume that the object is not moving
+        for(int i = 0; i < previousLocations.Length - 1; i++)
+        {
+            if(Vector3.Distance(previousLocations[i], previousLocations[i + 1]) >= noMovementThreshold)
+            {
+                //The minimum movement has been detected between frames
+                parado = false;
+                break;
+            }
+            else
+            {
+                parado = true;
+            }
+        }
+    }
 
 
     // Accedidas desde ONDAS
@@ -1865,14 +1974,17 @@ public class Follower : MonoBehaviour
     {
         if (!estadoRevolucionInicializado)
         {
-            if (Utilidades.RandomWeightedBool(1, 1))
+            int azar = Random.Range(1,3); //Devuelve 1  o 2
+            if (azar == 1)
             {
                 esIncendiario = true;
+                esSaboteador = false;
                 estadoRevolucionActual = REVOLUCION.BUSCANDOPRENDERFUEGO;
             }
-            else
+            else if (azar == 2)
             {
                 esSaboteador = true;
+                esIncendiario = false;
                 estadoRevolucionActual = REVOLUCION.BUSCANDOANTENA;
             }
             estadoRevolucionInicializado = true;
@@ -1899,7 +2011,6 @@ public class Follower : MonoBehaviour
                     gds.SetDestination(posPrenderFuego);
                     gds.SetDistanciaObjetivo(15);
                     aiP.canSearch = true;
-                    an.SetTrigger("caminandoCartel");
                     float vel = SetVelocidadRandom();
                     ActualizarVelAn(vel);
                     aiP.maxSpeed = vel;
@@ -1908,6 +2019,10 @@ public class Follower : MonoBehaviour
             }
             if (estadoRevolucionActual == REVOLUCION.YENDOAPRENDERFUEGO)
             {
+                if(!aiP.pathPending && !parado)
+                {
+                    SetAnimacion(ANIMACION.CAMINANDOCARTEL);
+                }
                 if (aiP.reachedDestination)
                 {
                     estadoRevolucionActual = REVOLUCION.PRENDIENDOFUEGO;
@@ -1950,7 +2065,6 @@ public class Follower : MonoBehaviour
                     gds.SetDestination(totemSeleccionado.transform);
                     gds.SetDistanciaObjetivo(25);
                     aiP.canSearch = true;
-                    an.SetTrigger("caminandoCartel");
                     float vel = SetVelocidadRandom();
                     ActualizarVelAn(vel);
                     aiP.maxSpeed = vel;
@@ -1960,6 +2074,10 @@ public class Follower : MonoBehaviour
             }
             if (estadoRevolucionActual == REVOLUCION.YENDOAANTENA)
             {
+                if(!aiP.reachedDestination && !parado)
+                {
+                    SetAnimacion(ANIMACION.CAMINANDOCARTEL);
+                }
                 if (aiP.reachedDestination)
                 {
                     estadoRevolucionActual = REVOLUCION.APAGANDOANTENA;
@@ -2030,6 +2148,10 @@ public class Follower : MonoBehaviour
         }
         if (estadoRevolucionActual == REVOLUCION.SALIENDO)
         {
+            if(!parado && !aiP.pathPending)
+            {
+                SetAnimacion(ANIMACION.CAMINANDOCARTEL);
+            }
             if (aiP.reachedDestination)
             {
                 Morir("SalidoDelMapa");
@@ -2051,5 +2173,6 @@ public class Follower : MonoBehaviour
         // De este estado deberia salir solo porque desde el update cuando invoque a totemEmocionActualEstaPrendido()
         // y vea que está prendido debería dejar de ingresar aca
     }
+
 }
 

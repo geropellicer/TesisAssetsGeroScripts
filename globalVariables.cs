@@ -26,7 +26,7 @@ public class globalVariables : MonoBehaviour
     [SerializeField]
     List<GameObject> listaDePersonas;
 
-    
+
     [SerializeField]
     List<GameObject> listaDeSujetos;
 
@@ -63,6 +63,7 @@ public class globalVariables : MonoBehaviour
     /// <summary> Cantidad maxima de bichos que tenemos cuando no hay personas en la proyeccion</summary>
     [SerializeField]
     int cantidadMaximaBichosReposo;
+
 
     // Start is called before the first frame update
     void Start()
@@ -104,6 +105,7 @@ public class globalVariables : MonoBehaviour
         }
 
     }
+    
 
     // Update is called once per frame
     void Update()
@@ -141,13 +143,13 @@ public class globalVariables : MonoBehaviour
 
 
     /// <summary> Actualizamos la variable depositosDeComida para saber cuantos yacimientos vivos y con 1 o más comida hay</summary>
-    void ActualizarDepositosDeComida() 
+    void ActualizarDepositosDeComida()
     {
         List<GameObject> todosLosDepositos = new List<GameObject>(GameObject.FindGameObjectsWithTag("depositodecomida"));
         List<GameObject> devolver = new List<GameObject>();
         foreach (GameObject depo in todosLosDepositos)
         {
-            if(depo.GetComponent<depositoDeComida>().ObtenerUnidadesRestantes() > 0) 
+            if (depo.GetComponent<depositoDeComida>().ObtenerUnidadesRestantes() > 0)
             {
                 devolver.Add(depo);
             }
@@ -156,11 +158,13 @@ public class globalVariables : MonoBehaviour
     }
 
 
-    public void SumarPoblacion(GameObject sujeto)
+    public void SumarPoblacion(GameObject _sujeto)
     {
-        if (!listaDeSujetos.Contains(sujeto))
+        Debug.Log("Sumando");
+        if (!listaDeSujetos.Contains(_sujeto))
         {
-            listaDePersonas.Add(sujeto);
+            Debug.Log("Sumando adentro");
+            listaDeSujetos.Add(_sujeto);
             poblacionActual++;
         }
         else
@@ -171,8 +175,10 @@ public class globalVariables : MonoBehaviour
 
     public void RestarPoblacion(GameObject sujeto)
     {
+        Debug.Log("Restando");
         if (listaDeSujetos.Contains(sujeto))
         {
+            Debug.Log("Restando adentro");
             listaDeSujetos.Remove(sujeto);
             poblacionActual--;
         }
@@ -277,23 +283,29 @@ public class globalVariables : MonoBehaviour
     {
         if (poblacionActual < 1)
         {
-            ReiniciarEscena();
+            if(Time.time > 10)
+            {
+                // Solo intentamos reiniciar la escena si han pasado 10 segundos al menosm para evitar que intente reiniciar al principio
+                ReiniciarEscena();
+            }
         }
 
-
-        int descontetoAcumulado = 0;
-        foreach (GameObject sujeto in listaDeSujetos)
+        if (poblacionActual > 0)
         {
-            descontetoAcumulado += sujeto.GetComponent<Follower>().ObtenerPorcentajeDescontento();
-        }
-        promedioDescontento = descontetoAcumulado / listaDeSujetos.Count;
-
-        if (promedioDescontento > 50)
-        {
+            int descontetoAcumulado = 0;
             foreach (GameObject sujeto in listaDeSujetos)
             {
-                forzarRevolucion = true;
-                sujeto.GetComponent<Follower>().ActivarProcesoRevolucionario();
+                descontetoAcumulado += sujeto.GetComponent<Follower>().ObtenerPorcentajeDescontento();
+            }
+            promedioDescontento = descontetoAcumulado / listaDeSujetos.Count;
+
+            if (promedioDescontento > 50)
+            {
+                foreach (GameObject sujeto in listaDeSujetos)
+                {
+                    forzarRevolucion = true;
+                    sujeto.GetComponent<Follower>().ActivarProcesoRevolucionario();
+                }
             }
         }
 
@@ -314,16 +326,17 @@ public class globalVariables : MonoBehaviour
     void ControlarPoblacion()
     {
         // Si hay personas ejercemos un control mas sutil.
-        if(listaDePersonas.Count > 0)
+        if (listaDePersonas.Count > 0)
         {
-            if(promedioDescontento >= 40)
+            if (promedioDescontento >= 40)
             {
                 // No hacemos nada porque es posible que se active el modo revolucionario en cualquier momento
-            } else if( promedioDescontento < 40)
-            {   
+            }
+            else if (promedioDescontento < 40)
+            {
                 // EN principio en este caso solo agregamos un bicho cada 5 segundos, para que el flow dependa mas de lo que pasa en la escena
                 // Adicionalmente podriamos manejar algo similar o igual a cuando no hay personas.
-                if(poblacionActual < cantidadMinimaBichosReposo)
+                if (poblacionActual < cantidadMinimaBichosReposo)
                 {
                     GameObject.Instantiate(prefabBicho, Utilidades.PuntoRandom(piso), Quaternion.identity);
                 }
@@ -331,14 +344,15 @@ public class globalVariables : MonoBehaviour
         }
 
         // Si no hay personas vamos inyectando personas para que siempre se mantenga entre el minimo y el maximo
-        if(listaDePersonas.Count == 0){
-            if(poblacionActual < cantidadMinimaBichosReposo)
+        if (listaDePersonas.Count == 0)
+        {
+            if (poblacionActual < cantidadMinimaBichosReposo)
             {
                 // Spawneamos la cantidad necesaria para llegar a un promedio entre el minimo y el maximo
                 // Por ejemplo si el minimo es 5 y el maximo es 10 y tenemos 2:
                 // Espawenamos ((5-2) + (10-2)) / 2 = 5.5;
                 int cantidadASpawnear = Mathf.FloorToInt(((cantidadMinimaBichosReposo - poblacionActual) + (cantidadMaximaBichosReposo - poblacionActual)) / 2);
-                for(int i = 0; i < cantidadASpawnear; i++)
+                for (int i = 0; i < cantidadASpawnear; i++)
                 {
                     GameObject.Instantiate(prefabBicho, Utilidades.PuntoRandom(piso), Quaternion.identity);
                 }
@@ -346,10 +360,10 @@ public class globalVariables : MonoBehaviour
         }
     }
 
-    
+
     public void OscurecidoTerminado()
     {
-         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     void ReiniciarEscena()

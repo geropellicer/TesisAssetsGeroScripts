@@ -23,6 +23,12 @@ public class ComidaNueva : MonoBehaviour
     [SerializeField]
     bool configurada;
 
+    [SerializeField]
+    GameObject sujetoQueComio;
+
+    [SerializeField]
+    bool comida;
+
 
     // Start is called before the first frame update
     void Start()
@@ -33,15 +39,26 @@ public class ComidaNueva : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(configurada)
+        if(configurada && !comida)
         {
             if(persona != null){
                 MoveToPersona();
             } else {
                 MoveToSujeto();
             }
-        } else{
+        } else if(!configurada){
             Debug.Log("Comida no configurada desde update");
+        } else if(comida)
+        {
+            if(Vector2.Distance(
+                new Vector2(transform.position.x, transform.position.y), 
+                new Vector2(sujetoQueComio.transform.position.x, sujetoQueComio.transform.position.y)) > 2)
+            {
+                transform.position = Vector2.MoveTowards(transform.position, sujetoQueComio.transform.position, 2f);
+            } else {
+                sujetoQueComio.GetComponent<Follower>().Alimentarse();
+                Destroy(gameObject);
+            }
         }
     }
 
@@ -68,12 +85,12 @@ public class ComidaNueva : MonoBehaviour
         }
     }
 
-    public void Comer(GameObject sujetoQueComio)
+    public void Comer(GameObject _sujetoQueComio)
     {
         if(configurada)
         {
-            sujetoQueComio.GetComponent<Follower>().Alimentarse();
-            Destroy(gameObject);
+            comida = true;
+            sujetoQueComio = _sujetoQueComio;
         } else {
             Debug.Log("Comida no configurada desde Comer()");
         }
