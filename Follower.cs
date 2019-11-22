@@ -197,6 +197,13 @@ public class Follower : MonoBehaviour
     [SerializeField]
     int hambre;
 
+    /// <summary> Devolvemos para la barra de hambre cuanto hambre tiene. Sube por cada ciclo y baja al alimentarse. </summary>
+    [SerializeField]
+    public int ObtenerHambre()
+    {
+        return hambre;
+    }
+
     /// <summary> Cuando el hambre supere este umbral va a intentar alimentarse cuando tenga la oportunidad </summary>
     [SerializeField]
     int umbralHambreAlimentarse = 33;
