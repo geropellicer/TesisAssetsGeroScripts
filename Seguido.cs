@@ -57,7 +57,16 @@ public class Seguido : MonoBehaviour {
         if(comidas[random] == null){
             Debug.Log("Atencion: se iba a devolver una comida NULA del array de comidas de la persona " + gameObject.name);
             Debug.Log("Index de la comida nula: " + random);
-        } 
+        } else {
+            // Si no es nulla es una buena comida. La marcamos como preseleccionada y la sacamos de la lista.
+            if(comidas[random].GetComponent<ComidaNueva>().preseleccionada == false)
+            {
+                comidas.[random].GetComponent<ComidaNueva>().preseleccionada == true;
+            } else {
+                // Si la comida ya estaba preseleccionada devolvemos null y deberiamos intentar de nuevo desde el bicho.
+                return null;
+            }
+        }
         return comidas[random];
     }
 

@@ -401,6 +401,23 @@ public class Follower : MonoBehaviour
     bool antenaDeEmocionEstaTransmitiendo;
 
 
+    /// <summary> Si hemos ya seleccionado que comida de la persona nos vamos a comer, es decir, si esta inicializado el proceso de alimentacion
+    /// para ir a los otros subestados de ManejarAlimentacion()</summary>
+    [SerializeField]
+    bool comidaSeleccionada;
+    
+
+    /// <summary> La comida que hemos pre elegido de la persona para ir a comer. </summary>
+    [SerializeField]
+    GameObject comidaPreseleccionada;
+    
+    /// <summary> 
+    /// </summary>
+
+    /// <summary> 
+    /// </summary>
+
+
     // FIN VARIABLES
     // /////////////////////////////////////////////////////////////////////////
     // /////////////////////////////////////////////////////////////////////////
@@ -1007,7 +1024,6 @@ public class Follower : MonoBehaviour
         forzarMilitar = false;
         tiempoActualTrabajar = 0;
         tiempoActualRumiar = 0;
-        subEstadoActualComiendo = COMIENDO.SELECCIONANDOCOMIDA;
         subEstadoActualIdle = IDLE.buscandoLugar;
         subEstadoActualTrabajando = TRABAJANDO.buscandoTrabajo;
     }
@@ -1732,10 +1748,6 @@ public class Follower : MonoBehaviour
     void CambiarModoAlimentacion(bool e)
     {
         modoAlimentacion = e;
-        if (e == true)
-        {
-            subEstadoActualComiendo = COMIENDO.SELECCIONANDOCOMIDA;
-        }
     }
 
     /// <summary> Entramos aca cada 3 o 4 segundos segun el ciclo asignado al azar.
@@ -1744,10 +1756,16 @@ public class Follower : MonoBehaviour
     /// También lo matamos si el hambre supera el umbral de muerte. </summary>
     void ManejarHambre()
     {
-        hambre++;
+        
+        hambre += 2;
+
         if (hambre > umbralHambreAlimentarse)
         {
-            IntentarAlimentarse();
+            // Solo nos intentamos alimentar si no tenemos persona y tenemos comida propia, o si nuestra persona,  en caso de tenerla, tiene comida
+            if((persona == null && comidasPropias.Count > 0) || (persona != null && persona.GetComponent<Seguido>().comidas.Count > 0)){
+                IntentarAlimentarse();
+            }
+
             if (porcentajeDescontento < 100)
             {
                 porcentajeDescontento += 2;
@@ -1792,17 +1810,51 @@ public class Follower : MonoBehaviour
         // sino se van a morir de hambre los huerfanos
         if (persona != null)
         {
+            if(!comidaSeleccionada)
+            {
+                // Seleccionar comida de la persona
+                comidaSeleccionada = true;
+                subEstadoActualComiendo = COMIENDO.SELECCIONANDOCOMIDA;
+            }
+
             if (subEstadoActualComiendo == COMIENDO.SELECCIONANDOCOMIDA)
             {
+                for(int i = 0; i < persona.GetComponent<Seguido>().comidas.Count; i++)
+                {
+                    comidaPreseleccionada =  persona.GetComponent<Seguido>().ObtenerComidaDisponible();
+                    if(comidaPreseleccionada != null)
+                    {
+                        // Si encontramos una comida que no esta preseleciconada, salimos del loop y vamos al siguiente modo
+                        gds.SetDestination(comidaPreseleccionada.transform);
+                        subEstadoActualComiendo = COMIENDO.CAMINANDOACOMIDA;
+                        break;
+                    }
+                }
 
+                // Si llegamos hasta aca es porqe en todo el loop ninguna comida esta disponible. Desactivamos el modo alimentaicon
+                CambiarModoAlimentacion(false);
+                return;
             }
             if (subEstadoActualComiendo == COMIENDO.CAMINANDOACOMIDA)
             {
+                if(!aiP.pathPending && !parado)
+                {
+                    SetAnimacion(ANIMACION.CAMINANDO);
+                }
 
+                if(aiP.reachedDestination)
+                {
+                    // TODO: podriamos poner la animacion comiendo
+                    SetAnimacion(ANIMACION.IDLE);
+                    subEstadoActualComiendo = COMIENDO.COMIENDO;
+                }
             }
             if (subEstadoActualComiendo == COMIENDO.COMIENDO)
             {
-
+                // comer comida
+                comidaPreseleccionada.GetComponent<ComidaNueva>().Comer(gameObject);
+                comidaSeleccionada = false;
+                comidaPreseleccionada = null;
             }
         }
         // Si somos huerfanos simplemente comemos una de las comidas que tengamos almacenadas.

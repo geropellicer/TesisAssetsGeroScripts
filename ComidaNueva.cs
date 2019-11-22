@@ -23,6 +23,11 @@ public class ComidaNueva : MonoBehaviour
     [SerializeField]
     bool configurada;
 
+    /// <summary> Cuando la comida es de una persona, la preseleccionamos cuando un bicho tiene intencion de comersela, 
+    /// para que no este disponible para otro bicho mientras el que la preselcciono llega a comerla </summary>
+    [SerializeField]
+    public bool preseleccionada;
+
 
     // Start is called before the first frame update
     void Start()
