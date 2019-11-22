@@ -110,6 +110,8 @@ public class Seguido : MonoBehaviour {
         return detector.GetComponent<detectorSujetosCercanos>();
     }
 
+    float hambre;
+
 
     void Awake()
     {
@@ -152,7 +154,7 @@ public class Seguido : MonoBehaviour {
                 GameObject comidaComer = comidas[0];
                 //Destroy(comidaComer);
                 // En vez de destruirla hacemos que se coma 
-                comida.GetComponent<ComidaNueva>().ComerPorPersona(gameObject);
+                comidaComer.GetComponent<ComidaNueva>().ComerPorPersona(gameObject);
                 comidas.Remove(comidaComer);
             }
 
@@ -160,6 +162,8 @@ public class Seguido : MonoBehaviour {
             // y que nos devuelva al morir si collisiono con algun sujeto cuya persona no somos nosotros o no
             detector.SetActive(true);
         }
+
+        hambre++;
     }
 
     /// <summary> Cuando un follower toca a otro de una persona distinta, si su persona es mayor, solicita empezar a seguirlo.
@@ -270,5 +274,15 @@ public class Seguido : MonoBehaviour {
         return followerNacionalistas.Count;
     }
 
+    public float ObtenerHambre()
+    {
+        return hambre;
+    }
+
+
+    public void Alimentarse()
+    {
+        hambre = 0;
+    }
     
 }

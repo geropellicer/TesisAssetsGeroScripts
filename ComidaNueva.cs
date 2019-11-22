@@ -60,7 +60,13 @@ public class ComidaNueva : MonoBehaviour
             {
                 transform.position = Vector2.MoveTowards(transform.position, sujetoQueComio.transform.position, 2f);
             } else {
-                sujetoQueComio.GetComponent<Follower>().Alimentarse();
+                if(sujetoQueComio.GetComponent<Follower>())
+                {
+                    sujetoQueComio.GetComponent<Follower>().Alimentarse();
+                } else if (sujetoQueComio.GetComponent<Seguido>())
+                {
+                    sujetoQueComio.GetComponent<Seguido>().Alimentarse();
+                }
                 Destroy(gameObject);
             }
         }
@@ -90,6 +96,17 @@ public class ComidaNueva : MonoBehaviour
     }
 
     public void Comer(GameObject _sujetoQueComio)
+    {
+        if(configurada)
+        {
+            comida = true;
+            sujetoQueComio = _sujetoQueComio;
+        } else {
+            Debug.Log("Comida no configurada desde Comer()");
+        }
+    }
+
+    public void ComerPorPersona(GameObject _sujetoQueComio)
     {
         if(configurada)
         {

@@ -21,7 +21,7 @@ public class BarraHambrePersona : MonoBehaviour {
     }
 
     private void Update() {
-        float newX = Utilidades.Map(bicho.ObtenerHambre(), minHambrePosible, maxHambrePosible, minAnchoBarrita, maxAnchoBarrita);
+        float newX = Utilidades.Map(persona.ObtenerHambre(), minHambrePosible, maxHambrePosible, minAnchoBarrita, maxAnchoBarrita);
         transform.localScale = new Vector3(newX, transform.localScale.y, transform.localScale.z);
     }
 }
