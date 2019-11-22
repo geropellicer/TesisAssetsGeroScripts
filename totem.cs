@@ -31,7 +31,7 @@ public class totem : MonoBehaviour
     }
 
     /// <summary> Gráfico de ondas para dar una idea de sobre que forma está incidiendo.
-    /// TODO: ver si no se puede aplicar el waveform del audio como distorsión </summary>
+    /// TODO: ver si no se puede aplicar el GLITCH HOLOGRAMA </summary>
     public GameObject ondas;
 
     /// <summary> Referencia al SpriteRederer component </summary>

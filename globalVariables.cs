@@ -306,6 +306,20 @@ public class globalVariables : MonoBehaviour
                     forzarRevolucion = true;
                     sujeto.GetComponent<Follower>().ActivarProcesoRevolucionario();
                 }
+        if (!forzarRevolucion)
+        {
+            if (promedioDescontento > 50)
+            {
+                foreach (GameObject sujeto in listaDeSujetos)
+                {
+                    if(sujeto.GetComponent<Follower>().GetForzarRevolucion() == false)
+                    {
+                        sujeto.GetComponent<Follower>().ActivarProcesoRevolucionario();
+                    }
+                }
+
+                forzarRevolucion = true;
+                // TODO: pintar suelo de rojo
             }
         }
 
@@ -316,8 +330,13 @@ public class globalVariables : MonoBehaviour
             {
                 foreach (GameObject sujeto in listaDeSujetos)
                 {
-                    sujeto.GetComponent<Follower>().DesactivarProcesoRevolucionario();
+                    if(sujeto.GetComponent<Follower>().GetForzarRevolucion() == true)
+                    {
+                        sujeto.GetComponent<Follower>().DesactivarProcesoRevolucionario();
+                    }
                 }
+
+                forzarRevolucion = false;
             }
         }
     }

@@ -144,12 +144,6 @@ public class Follower : MonoBehaviour
     [SerializeField]
     private IDLE subEstadoActualIdle;
 
-    [SerializeField]
-    /// <summary> Guardamos la cantidad de incidencia que tiene una antena particular. </summary>
-    /// <summary> Cada vez que una onda de un totem particular le pega a un bicho, incrementa el efecto de esa antena.</summary>
-    /// <summary> TODO: adicionalmente también deberían aumentar por efecto contagio de otros bichos de la misma persona. </summary>
-
-    //private int efectoPublicoEstatal, efectoPublicoMilitar, efectoPrivadoComercial, efectoPrivadoEntretenimiento;
     /// <summary> Cambio los efectos a booleanos mas simples. El booleano de la emocion que este activado permite que el
     /// nivel de emocion de esa emocion aumente </summary>
     bool publicoEstatal, publicoMilitar, privadoComercial, privadoEntretenimiento;
@@ -196,6 +190,13 @@ public class Follower : MonoBehaviour
     /// <summary> Contamos en tiempo real cuanto hambre tiene. Sube por cada ciclo y baja al alimentarse. </summary>
     [SerializeField]
     int hambre;
+
+    /// <summary> Devolvemos para la barra de hambre cuanto hambre tiene. Sube por cada ciclo y baja al alimentarse. </summary>
+    [SerializeField]
+    public int ObtenerHambre()
+    {
+        return hambre;
+    }
 
     /// <summary> Cuando el hambre supere este umbral va a intentar alimentarse cuando tenga la oportunidad </summary>
     [SerializeField]
@@ -320,6 +321,11 @@ public class Follower : MonoBehaviour
     [SerializeField]
     bool forzarRevolucion;
 
+    public bool GetForzarRevolucion()
+    {
+        return forzarRevolucion;
+    }
+
     /// <summary> Posibles estados del proceso revolucionario, en la funcion DecidirQueHaceRevolucion() se explican </summary>
     public enum REVOLUCION
     {
@@ -430,6 +436,21 @@ public class Follower : MonoBehaviour
     private bool  parado = true;
 
 
+    /// <summary> Si hemos ya seleccionado que comida de la persona nos vamos a comer, es decir, si esta inicializado el proceso de alimentacion
+    /// para ir a los otros subestados de ManejarAlimentacion()</summary>
+    [SerializeField]
+    bool comidaSeleccionada;
+    
+
+    /// <summary> La comida que hemos pre elegido de la persona para ir a comer. </summary>
+    [SerializeField]
+    GameObject comidaPreseleccionada;
+    
+    /// <summary> 
+    /// </summary>
+
+    /// <summary> 
+    /// </summary>
 
 
     // FIN VARIABLES
@@ -857,58 +878,61 @@ public class Follower : MonoBehaviour
     /// Si es con otro sujeto: de la misma persona, ignoramos. De otra persona, maneja quien tiene persona con mas seguidores.</summary>
     void OnTriggerEnter2D(Collider2D other)
     {
-        /*if(other.gameObject.tag == "persona"){
-            if(persona == null || GameObject.ReferenceEquals(persona, other.gameObject)){
-                ManejarColisionesConPersona(other);
-            }
-        }*/
-        // Arreglo: si nuestra persona es null y si nuestra persona no es la misma que con la que estamos chocando
-        // (antes estaba o si es la misma) 
-        if (other.gameObject.tag == "persona")
+        // Solo manejamos triggers con personas u otros sujetos si no estamos en momentos revolucionarios
+        if(!forzarRevolucion)
         {
-            if (persona == null)
-            {
-                // Si mi persona es null soy huerfano. Solo llamo a manejar la colision si enre los seguidores de
-                // la persona con la que me estoy chocando no hay al menos 10 nacionalistas
-                if (other.gameObject.GetComponent<Seguido>().ContarFollowersNacionalistas() < 10)
-                {
-                    ManejarColisionesHuerfanoConPersona(other);
+            /*if(other.gameObject.tag == "persona"){
+                if(persona == null || GameObject.ReferenceEquals(persona, other.gameObject)){
+                    ManejarColisionesConPersona(other);
                 }
-            }
-        }
-        if (other.gameObject.tag == "sujeto")
-        {
-            // Si somos huerfanos, no hacemos nada cuando nos encontramos con otro sujeto. Solo si nos encontramos con una person (arriba).
-            // Pero no cuando nos encontramos con otro sujeto porque en caso de que el otro sea huerfano no pasa ninguna interaccion
-            // y en caso de que el otro no lo sea se manejara en el otro (abajo)
-            if (persona != null)
+            }*/
+            // Arreglo: si nuestra persona es null y si nuestra persona no es la misma que con la que estamos chocando
+            // (antes estaba o si es la misma) 
+            if (other.gameObject.tag == "persona")
             {
-                // Si el otro sujeto no tiene persona, es huerfano, manejamos aca
-                if (other.gameObject.GetComponent<Follower>().persona == null)
+                if (persona == null)
                 {
-                    if (!forzarNacionalismo)
+                    // Si mi persona es null soy huerfano. Solo llamo a manejar la colision si enre los seguidores de
+                    // la persona con la que me estoy chocando no hay al menos 10 nacionalistas
+                    if (other.gameObject.GetComponent<Seguido>().ContarFollowersNacionalistas() < 10)
                     {
-                        ManejarColisionesConSujetoHuerfano(other);
+                        ManejarColisionesHuerfanoConPersona(other);
                     }
                 }
-                else if (persona.GetComponent<Seguido>().GetNumSeguidores() > other.gameObject.GetComponent<Follower>().persona.GetComponent<Seguido>().GetNumSeguidores())
+            }
+            if (other.gameObject.tag == "sujeto")
+            {
+                // Si somos huerfanos, no hacemos nada cuando nos encontramos con otro sujeto. Solo si nos encontramos con una person (arriba).
+                // Pero no cuando nos encontramos con otro sujeto porque en caso de que el otro sea huerfano no pasa ninguna interaccion
+                // y en caso de que el otro no lo sea se manejara en el otro (abajo)
+                if (persona != null)
                 {
-                    // Si el otro sujeto tiene persona y tiene menos seguidores que nosotros, manejamos aca
-                    if (!forzarNacionalismo)
+                    // Si el otro sujeto no tiene persona, es huerfano, manejamos aca
+                    if (other.gameObject.GetComponent<Follower>().persona == null)
                     {
-                        ManejarColisionesConSujeto(other);
-                    }
-                }
-                if (GameObject.Equals(persona, other.gameObject.GetComponent<Follower>().persona))
-                {
-                    // Si las dos personas son la misma, estamos en presencia de un seguidor de nuestro propio grupo.
-                    // Solo actuamos en caso de que haya que contagiar: si sentimos mas emocion que el umbral y si el otro no tiene nuestra emocion
-                    // TODO: deberiamos agregar los niveles de emocion de rebelarse y huir
-                    if (nivelEmocionActual > umbralContagioEmocion)
-                    {
-                        if (emocionActual != other.gameObject.GetComponent<Follower>().ObtenerEmocionActual())
+                        if (!forzarNacionalismo)
                         {
-                            ContagiarEmocion(other.gameObject, emocionActual);
+                            ManejarColisionesConSujetoHuerfano(other);
+                        }
+                    }
+                    else if (persona.GetComponent<Seguido>().GetNumSeguidores() > other.gameObject.GetComponent<Follower>().persona.GetComponent<Seguido>().GetNumSeguidores())
+                    {
+                        // Si el otro sujeto tiene persona y tiene menos seguidores que nosotros, manejamos aca
+                        if (!forzarNacionalismo)
+                        {
+                            ManejarColisionesConSujeto(other);
+                        }
+                    }
+                    if (GameObject.Equals(persona, other.gameObject.GetComponent<Follower>().persona))
+                    {
+                        // Si las dos personas son la misma, estamos en presencia de un seguidor de nuestro propio grupo.
+                        // Solo actuamos en caso de que haya que contagiar: si sentimos mas emocion que el umbral y si el otro no tiene nuestra emocion
+                        if (nivelEmocionActual > umbralContagioEmocion)
+                        {
+                            if (emocionActual != other.gameObject.GetComponent<Follower>().ObtenerEmocionActual())
+                            {
+                                ContagiarEmocion(other.gameObject, emocionActual);
+                            }
                         }
                     }
                 }
@@ -1040,7 +1064,6 @@ public class Follower : MonoBehaviour
         forzarMilitar = false;
         tiempoActualTrabajar = 0;
         tiempoActualRumiar = 0;
-        subEstadoActualComiendo = COMIENDO.SELECCIONANDOCOMIDA;
         subEstadoActualIdle = IDLE.buscandoLugar;
         subEstadoActualTrabajando = TRABAJANDO.buscandoTrabajo;
     }
@@ -1841,10 +1864,6 @@ public class Follower : MonoBehaviour
     void CambiarModoAlimentacion(bool e)
     {
         modoAlimentacion = e;
-        if (e == true)
-        {
-            subEstadoActualComiendo = COMIENDO.SELECCIONANDOCOMIDA;
-        }
     }
 
     /// <summary> Entramos aca cada 3 o 4 segundos segun el ciclo asignado al azar.
@@ -1853,10 +1872,16 @@ public class Follower : MonoBehaviour
     /// También lo matamos si el hambre supera el umbral de muerte. </summary>
     void ManejarHambre()
     {
-        hambre++;
+        
+        hambre += 2;
+
         if (hambre > umbralHambreAlimentarse)
         {
-            IntentarAlimentarse();
+            // Solo nos intentamos alimentar si no tenemos persona y tenemos comida propia, o si nuestra persona,  en caso de tenerla, tiene comida
+            if((persona == null && comidasPropias.Count > 0) || (persona != null && persona.GetComponent<Seguido>().comidas.Count > 0)){
+                IntentarAlimentarse();
+            }
+
             if (porcentajeDescontento < 100)
             {
                 porcentajeDescontento += 2;
@@ -1901,17 +1926,51 @@ public class Follower : MonoBehaviour
         // sino se van a morir de hambre los huerfanos
         if (persona != null)
         {
+            if(!comidaSeleccionada)
+            {
+                // Seleccionar comida de la persona
+                comidaSeleccionada = true;
+                subEstadoActualComiendo = COMIENDO.SELECCIONANDOCOMIDA;
+            }
+
             if (subEstadoActualComiendo == COMIENDO.SELECCIONANDOCOMIDA)
             {
+                for(int i = 0; i < persona.GetComponent<Seguido>().comidas.Count; i++)
+                {
+                    comidaPreseleccionada =  persona.GetComponent<Seguido>().ObtenerComidaDisponible();
+                    if(comidaPreseleccionada != null)
+                    {
+                        // Si encontramos una comida que no esta preseleciconada, salimos del loop y vamos al siguiente modo
+                        gds.SetDestination(comidaPreseleccionada.transform);
+                        subEstadoActualComiendo = COMIENDO.CAMINANDOACOMIDA;
+                        break;
+                    }
+                }
 
+                // Si llegamos hasta aca es porqe en todo el loop ninguna comida esta disponible. Desactivamos el modo alimentaicon
+                CambiarModoAlimentacion(false);
+                return;
             }
             if (subEstadoActualComiendo == COMIENDO.CAMINANDOACOMIDA)
             {
+                if(!aiP.pathPending && !parado)
+                {
+                    SetAnimacion(ANIMACION.CAMINANDO);
+                }
 
+                if(aiP.reachedDestination)
+                {
+                    // TODO: podriamos poner la animacion comiendo
+                    SetAnimacion(ANIMACION.IDLE);
+                    subEstadoActualComiendo = COMIENDO.COMIENDO;
+                }
             }
             if (subEstadoActualComiendo == COMIENDO.COMIENDO)
             {
-
+                // comer comida
+                comidaPreseleccionada.GetComponent<ComidaNueva>().Comer(gameObject);
+                comidaSeleccionada = false;
+                comidaPreseleccionada = null;
             }
         }
         // Si somos huerfanos simplemente comemos una de las comidas que tengamos almacenadas.
@@ -1927,7 +1986,6 @@ public class Follower : MonoBehaviour
                         SeleccionarComidaPropia();
                     }
                     // Si es individualista comemos dos veces por gloton. 
-                    // TODO: habria que implementarlo en el ciclo de comer de la persona.
                 }
             }
         }
@@ -1956,6 +2014,18 @@ public class Follower : MonoBehaviour
     public void ActivarProcesoRevolucionario()
     {
         forzarRevolucion = true;
+        if(persona != null)
+        {
+            DesacoplarDePersona();
+        }
+        ColorearComoRevolucion();
+    }
+
+    void ColorearComoRevolucion()
+    {
+        colorSpriteBicho = new Color(1, 0, 0, 1);
+        colorSpriteZona = new Color(1, 0, 0, 0);
+        sR.color = colorSpriteBicho;
     }
 
     public void DesactivarProcesoRevolucionario()
