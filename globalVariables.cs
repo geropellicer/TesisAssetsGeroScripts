@@ -288,12 +288,20 @@ public class globalVariables : MonoBehaviour
         }
         promedioDescontento = descontetoAcumulado / listaDeSujetos.Count;
 
-        if (promedioDescontento > 50)
+        if (!forzarRevolucion)
         {
-            foreach (GameObject sujeto in listaDeSujetos)
+            if (promedioDescontento > 50)
             {
+                foreach (GameObject sujeto in listaDeSujetos)
+                {
+                    if(sujeto.GetComponent<Follower>().GetForzarRevolucion() == false)
+                    {
+                        sujeto.GetComponent<Follower>().ActivarProcesoRevolucionario();
+                    }
+                }
+
                 forzarRevolucion = true;
-                sujeto.GetComponent<Follower>().ActivarProcesoRevolucionario();
+                // TODO: pintar suelo de rojo
             }
         }
 
@@ -304,8 +312,13 @@ public class globalVariables : MonoBehaviour
             {
                 foreach (GameObject sujeto in listaDeSujetos)
                 {
-                    sujeto.GetComponent<Follower>().DesactivarProcesoRevolucionario();
+                    if(sujeto.GetComponent<Follower>().GetForzarRevolucion() == true)
+                    {
+                        sujeto.GetComponent<Follower>().DesactivarProcesoRevolucionario();
+                    }
                 }
+
+                forzarRevolucion = false;
             }
         }
     }
