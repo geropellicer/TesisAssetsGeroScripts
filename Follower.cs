@@ -1906,6 +1906,18 @@ public class Follower : MonoBehaviour
     public void ActivarProcesoRevolucionario()
     {
         forzarRevolucion = true;
+        if(persona != null)
+        {
+            DesacoplarDePersona();
+        }
+        ColorearComoRevolucion();
+    }
+
+    void ColorearComoRevolucion()
+    {
+        colorSpriteBicho = new Color(1, 0, 0, 1);
+        colorSpriteZona = new Color(1, 0, 0, 0);
+        sR.color = colorSpriteBicho;
     }
 
     public void DesactivarProcesoRevolucionario()
